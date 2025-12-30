@@ -97,7 +97,10 @@ pub use waveform::{CommonParams, DemodResult, Waveform, WaveformFactory, Wavefor
 pub use whitening::Whitening;
 
 // Mesh networking re-exports
-pub use mesh::{MeshNetwork, MeshPhy, MeshPacket, NodeId, FloodRouter, MacLayer};
+pub use mesh::{
+    MeshNetwork, MeshPhy, MeshPacket, NodeId, FloodRouter, MacLayer,
+    LoRaMesh, LoRaMeshPhy, LoRaMeshConfig, MeshtasticNode, ModemPreset, Region,
+};
 
 /// Prelude module for convenient imports
 pub mod prelude {
@@ -107,5 +110,5 @@ pub mod prelude {
     pub use crate::params::{CodingRate, LoRaParams, SpreadingFactor};
     pub use crate::types::{Complex, IQSample};
     // Mesh networking
-    pub use crate::mesh::{MeshNetwork, MeshPhy, MeshPacket, NodeId};
+    pub use crate::mesh::{MeshNetwork, MeshPhy, MeshPacket, NodeId, LoRaMesh, LoRaMeshConfig};
 }

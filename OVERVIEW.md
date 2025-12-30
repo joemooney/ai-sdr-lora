@@ -260,13 +260,18 @@ Measured with `tokei`:
 
 ### December 2024
 
+- **LoRa Mesh Integration Complete** - Full integration of LoRa waveform with mesh networking:
+  - `LoRaMeshPhy`: Adapts LoRa waveform to implement `MeshPhy` trait
+  - `LoRaMesh`: Complete mesh node combining PHY, MAC, and routing layers
+  - Channel Activity Detection (CAD) via signal power estimation
+  - Sample-based processing for SDR integration
+  - 42 passing mesh tests, 11 of 20 MESH requirements completed
 - **Mesh Networking Module Implemented** - Full mesh networking stack in `r4w-core/src/mesh/`:
   - `MeshNetwork` and `MeshPhy` traits for protocol abstraction
   - CSMA/CA MAC layer with contention window scaling
   - FloodRouter (SNR-based delays) and NextHopRouter with route caching
   - NeighborTable with link quality metrics (RSSI/SNR/PDR)
   - MeshtasticNode implementation with regional frequency support
-  - 32 passing tests, 9 of 20 MESH requirements completed
 - **License Simplified** - Changed from dual MIT/Apache-2.0 to MIT only for maximum permissiveness
 - **License Files Added** - `LICENSE` and `THIRD_PARTY.md` with proper attributions
 - **Physical Layer Complete** - All 6 phases implemented:
@@ -1563,8 +1568,11 @@ The mesh networking module is now implemented in `crates/r4w-core/src/mesh/`:
 | `routing.rs` | `FloodRouter`, `NextHopRouter`, `DuplicateCache`, SNR-based delays | ✅ Complete |
 | `mac.rs` | CSMA/CA `MacLayer`, `CsmaConfig`, `ChannelUtilization` | ✅ Complete |
 | `meshtastic.rs` | `MeshtasticNode`, `ModemPreset`, `Region`, channel config | ✅ Complete |
+| `lora_mesh.rs` | `LoRaMesh`, `LoRaMeshPhy` - LoRa waveform with mesh integration | ✅ Complete |
 
 ### Completed Requirements
+- MESH-002: LoRa symbol encoding (via `LoRaMeshPhy` integrating existing LoRa waveform)
+- MESH-003: Channel Activity Detection (CAD) via signal power estimation
 - MESH-004: Regional frequency configuration
 - MESH-005: CSMA/CA with contention window
 - MESH-006: Packet framing
@@ -1576,7 +1584,6 @@ The mesh networking module is now implemented in `crates/r4w-core/src/mesh/`:
 - MESH-017: MeshNetwork trait implementation
 
 ### Remaining Work
-- MESH-002, MESH-003: Physical layer integration with LoRa modulation
 - MESH-012, MESH-013: Protobuf and AES encryption for full Meshtastic interoperability
 - MESH-015, MESH-016: Application layer (text messaging, position sharing)
 - MESH-018: SX126x hardware integration

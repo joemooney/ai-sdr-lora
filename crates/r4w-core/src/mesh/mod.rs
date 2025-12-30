@@ -77,10 +77,13 @@ pub mod routing;
 pub mod neighbor;
 pub mod mac;
 pub mod meshtastic;
+pub mod lora_mesh;
 
 // Re-export main types
-pub use traits::{MeshNetwork, MeshPhy, MeshError, MeshResult};
+pub use traits::{MeshNetwork, MeshPhy, MeshError, MeshResult, MeshStats, MeshConfig};
 pub use packet::{MeshPacket, PacketHeader, PacketFlags, NodeId};
 pub use routing::{Route, NextHop, FloodRouter, NextHopRouter, RoutingTable};
 pub use neighbor::{Neighbor, NeighborTable, NodeInfo};
 pub use mac::{MacLayer, CsmaConfig, ChannelState};
+pub use meshtastic::{MeshtasticNode, MeshtasticConfig, ModemPreset, Region};
+pub use lora_mesh::{LoRaMesh, LoRaMeshPhy, LoRaMeshConfig};

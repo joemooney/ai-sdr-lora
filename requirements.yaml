@@ -15,10 +15,10 @@ requirements:
   modified_at: 2025-12-30T18:54:37.847875523Z
   req_type: Epic
   tags:
-  - lora
-  - mesh
-  - meshtastic
   - protocol
+  - meshtastic
+  - mesh
+  - lora
   history:
   - id: b87df4b0-b8f6-47cc-bf04-604b5362c7fc
     author: CLI
@@ -32,41 +32,69 @@ requirements:
   prefix_override: MESH
   title: Meshtastic Physical Layer - LoRa Symbol Encoding
   description: 'Convert packet data to LoRa symbols using Meshtastic-compatible parameters: 16-symbol preamble (longer than minimum 8 for SX126x sleep compatibility), sync word 0x2B for Meshtastic network identification, and standard LoRa modulation with configurable SF/BW/CR.'
-  status: Draft
+  status: Completed
   priority: High
   owner: joe
   feature: 2-Mesh Networking
   created_at: 2025-12-30T18:31:47.337041128Z
-  modified_at: 2025-12-30T18:31:47.337041128Z
+  modified_at: 2025-12-30T20:09:32.375521722Z
   req_type: Functional
   tags:
-  - physical-layer
-  - encoding
   - lora
+  - encoding
+  - physical-layer
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
     created_at: 2025-12-30T18:31:47.337058767Z
+  comments:
+  - id: 5f839455-c17a-4582-a38a-4c94af795fcc
+    author: joe
+    content: Implemented via LoRaMeshPhy in crates/r4w-core/src/mesh/lora_mesh.rs - wraps existing LoRa waveform
+    created_at: 2025-12-30T20:09:32.375514922Z
+    modified_at: 2025-12-30T20:09:32.375514922Z
+  history:
+  - id: 3ff4e2d4-d62c-4f15-adc2-10febfbb7f56
+    author: CLI
+    timestamp: 2025-12-30T20:09:32.365271714Z
+    changes:
+    - field_name: status
+      old_value: Draft
+      new_value: Completed
 - id: 134a6905-0f5d-44dc-8bfe-5d7b5b515bb2
   spec_id: MESH-003
   prefix_override: MESH
   title: Meshtastic Physical Layer - Channel Activity Detection (CAD)
   description: Implement Channel Activity Detection before transmission to support CSMA/CA. Use LoRa CAD mode to detect ongoing transmissions. If channel is busy, defer transmission and enter backoff procedure.
-  status: Draft
+  status: Completed
   priority: High
   owner: joe
   feature: 3-Mesh Networking
   created_at: 2025-12-30T18:31:56.998874497Z
-  modified_at: 2025-12-30T18:31:56.998874497Z
+  modified_at: 2025-12-30T20:09:32.379972839Z
   req_type: Functional
   tags:
   - csma
-  - physical-layer
   - cad
+  - physical-layer
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
     created_at: 2025-12-30T18:31:56.998890864Z
+  comments:
+  - id: 241f4458-7c40-483c-a6f7-c124264b5cdb
+    author: joe
+    content: Implemented via signal power estimation in LoRaMeshPhy.process_samples()
+    created_at: 2025-12-30T20:09:32.379969524Z
+    modified_at: 2025-12-30T20:09:32.379969524Z
+  history:
+  - id: 619da37d-f488-406a-b282-27594025b386
+    author: CLI
+    timestamp: 2025-12-30T20:09:32.370959864Z
+    changes:
+    - field_name: status
+      old_value: Draft
+      new_value: Completed
 - id: 9b438fd3-b7c5-47ed-af6a-be2211b9b214
   spec_id: MESH-004
   prefix_override: MESH
@@ -80,9 +108,9 @@ requirements:
   modified_at: 2025-12-30T18:54:27.733209443Z
   req_type: Functional
   tags:
-  - regulatory
   - physical-layer
   - frequency
+  - regulatory
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -108,9 +136,9 @@ requirements:
   modified_at: 2025-12-30T18:54:51.011274770Z
   req_type: Functional
   tags:
+  - collision-avoidance
   - csma
   - mac-layer
-  - collision-avoidance
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -143,8 +171,8 @@ requirements:
   req_type: Functional
   tags:
   - framing
-  - packet
   - mac-layer
+  - packet
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -177,8 +205,8 @@ requirements:
   req_type: Functional
   tags:
   - fairness
-  - utilization
   - mac-layer
+  - utilization
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -204,9 +232,9 @@ requirements:
   modified_at: 2025-12-30T18:54:51.020338923Z
   req_type: Functional
   tags:
+  - flood
   - broadcast
   - routing
-  - flood
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -238,9 +266,9 @@ requirements:
   modified_at: 2025-12-30T18:54:51.024770069Z
   req_type: Functional
   tags:
+  - routing
   - unicast
   - next-hop
-  - routing
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -272,9 +300,9 @@ requirements:
   modified_at: 2025-12-30T18:54:27.765255591Z
   req_type: Functional
   tags:
+  - routing
   - deduplication
   - cache
-  - routing
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -300,9 +328,9 @@ requirements:
   modified_at: 2025-12-30T18:54:27.770472367Z
   req_type: Functional
   tags:
-  - routing
   - neighbor
   - discovery
+  - routing
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -328,9 +356,9 @@ requirements:
   modified_at: 2025-12-30T18:33:56.924811543Z
   req_type: Functional
   tags:
+  - interop
   - messages
   - protobuf
-  - interop
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -348,9 +376,9 @@ requirements:
   modified_at: 2025-12-30T18:34:06.606337548Z
   req_type: Functional
   tags:
-  - aes
   - interop
   - encryption
+  - aes
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -369,8 +397,8 @@ requirements:
   req_type: Functional
   tags:
   - interop
-  - config
   - channel
+  - config
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -388,9 +416,9 @@ requirements:
   modified_at: 2025-12-30T18:34:30.970516731Z
   req_type: Functional
   tags:
-  - text
   - app
   - messaging
+  - text
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -408,9 +436,9 @@ requirements:
   modified_at: 2025-12-30T18:34:41.008292847Z
   req_type: Functional
   tags:
-  - position
   - gps
   - app
+  - position
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -428,9 +456,9 @@ requirements:
   modified_at: 2025-12-30T18:54:51.029265252Z
   req_type: Functional
   tags:
-  - trait
   - integration
   - architecture
+  - trait
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -462,9 +490,9 @@ requirements:
   modified_at: 2025-12-30T18:35:04.632283047Z
   req_type: Functional
   tags:
-  - sx126x
   - radio
   - hardware
+  - sx126x
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -502,9 +530,9 @@ requirements:
   modified_at: 2025-12-30T18:35:26.159312602Z
   req_type: NonFunctional
   tags:
+  - power
   - battery
   - nfr
-  - power
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
