@@ -1124,7 +1124,7 @@ requirements:
   - id: FR-118
     type: Functional
     title: Isolation Levels
-    description: Four isolation levels (L1-L4) from process separation to hardware isolation with clear capability definitions
+    description: Eight isolation levels (L1-L8) from Rust memory safety to air-gapped hardware isolation with clear capability definitions
     status: completed
     priority: high
     parent: EPIC-016
@@ -1159,6 +1159,14 @@ requirements:
     description: Inter-process communication channel for sandbox control messages
     status: completed
     priority: medium
+    parent: EPIC-016
+
+  - id: FR-145
+    type: Functional
+    title: WebAssembly Isolation (L1.5)
+    description: WASM-based sandbox isolation using wasmtime with WASI capability-based security, memory isolation via linear memory, fuel-based execution limiting, and deny-by-default permissions
+    status: completed
+    priority: high
     parent: EPIC-016
 
   # ==========================================================================
@@ -1430,10 +1438,10 @@ id_config:
     description: Organizational folders
 features: []
 next_feature_number: 1
-next_spec_number: 145
+next_spec_number: 146
 prefix_counters:
   EPIC: 21
-  FR: 144
+  FR: 145
   NFR: 4
 relationship_definitions:
 - name: parent
