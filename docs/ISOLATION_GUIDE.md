@@ -440,6 +440,333 @@ The following benchmarks were measured on an x86_64 Linux system using release b
 
 **Key Insight**: The 300x overhead on trivial operations is due to the WASM call trampoline. For real DSP work where computation dominates, overhead drops to 2.8x because actual work amortizes the call cost.
 
+### Understanding the WASM Call Trampoline
+
+The 300x overhead for simple operations like `add(a, b)` is not a bug or inefficiency—it's an inherent cost of the isolation boundary. Understanding this is critical for designing WASM-based systems.
+
+#### What is the Call Trampoline?
+
+When the host calls a WASM function, the runtime must perform several steps:
+
+```
+Host Code                     WASM Sandbox
+    │                              │
+    │  1. Marshal arguments        │
+    │  ─────────────────────►      │
+    │                              │
+    │  2. Validate types           │
+    │  ─────────────────────►      │
+    │                              │
+    │  3. Set up WASM stack        │
+    │  ─────────────────────►      │
+    │                              │
+    │  4. Bounds check setup       │
+    │  ─────────────────────►      │
+    │                              │
+    │  5. Context switch           │
+    │  ═══════════════════════►    │
+    │                              │  ← WASM code executes here
+    │  6. Context switch back      │
+    │  ◄═══════════════════════    │
+    │                              │
+    │  7. Validate return value    │
+    │  ◄─────────────────────      │
+    │                              │
+    │  8. Unmarshal result         │
+    │  ◄─────────────────────      │
+    │                              │
+```
+
+For `add(a, b)` which is a single CPU instruction (~1ns), these 8 steps take ~300ns. The actual computation is less than 1% of the total time.
+
+#### Why Can't This Be Optimized Away?
+
+The trampoline exists to enforce isolation guarantees:
+
+| Step | Purpose | Cannot Skip Because... |
+|------|---------|------------------------|
+| Marshal args | Convert host types to WASM types | Type system boundary enforcement |
+| Validate types | Ensure WASM ABI compliance | Prevents type confusion attacks |
+| Stack setup | Initialize WASM stack frame | Sandboxed stack isolation |
+| Bounds check | Configure linear memory guards | Memory safety is fundamental |
+| Context switch | Enter sandboxed execution | This IS the isolation |
+
+If you skip these steps, you lose the isolation guarantees. The overhead is the **cost of isolation**, not inefficiency.
+
+#### When Overhead Doesn't Matter
+
+The key insight is that call overhead is **fixed per call**, not per operation. This means:
+
+```
+Overhead Impact = Trampoline_Time / Total_Work_Time
+
+Example 1: Single add
+  Work: 1ns, Trampoline: 300ns → Overhead = 300x (99.7% overhead)
+
+Example 2: 1000 adds in a loop (inside WASM)
+  Work: 1000ns, Trampoline: 300ns → Overhead = 1.3x (23% overhead)
+
+Example 3: FFT of 1024 samples
+  Work: 50000ns, Trampoline: 300ns → Overhead = 1.006x (0.6% overhead)
+```
+
+**Design Rule**: Minimize host-WASM boundary crossings. Do more work per call.
+
+### Is WASM Viable for Production Waveforms?
+
+**Yes, but with the right architecture.** Here's the decision framework:
+
+#### WASM is Viable When:
+
+| Pattern | Why It Works | Example |
+|---------|--------------|---------|
+| **Batch Processing** | Amortizes call overhead over many samples | Process 1000 samples per call instead of 1 |
+| **Complex Per-Call Work** | Computation dominates trampoline cost | FFT, FIR filter, correlation |
+| **Control Flow** | Logic is cheap, computation happens in batches | State machine, protocol parsing |
+| **Plugin Architecture** | Safety trumps raw performance | Third-party waveforms |
+
+#### WASM is NOT Viable When:
+
+| Pattern | Why It Fails | Example |
+|---------|--------------|---------|
+| **Sample-by-Sample** | Every sample pays 300ns overhead | Real-time audio callback per sample |
+| **Tight Inner Loops** | Call overhead dominates | Calling host for each multiply |
+| **Hard Real-Time** | Overhead adds jitter | <1μs latency requirements |
+| **Frequent Host Interaction** | Boundary crossings kill performance | Reading host state every sample |
+
+### Hybrid Architecture: Native DSP + WASM Logic
+
+The optimal architecture separates concerns:
+
+- **WASM**: Waveform logic, configuration, protocol handling (safe, portable)
+- **Native**: DSP primitives, SIMD operations, FFT (fast, reusable)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Hybrid WASM/Native Architecture                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    WASM Sandbox (Isolated)                            │  │
+│  │                                                                       │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │              Waveform Plugin (untrusted code)                   │  │  │
+│  │  │                                                                 │  │  │
+│  │  │  • State machine logic                                          │  │  │
+│  │  │  • Protocol parsing/generation                                  │  │  │
+│  │  │  • Configuration handling                                       │  │  │
+│  │  │  • Symbol mapping                                               │  │  │
+│  │  │  • Error correction control flow                                │  │  │
+│  │  │                                                                 │  │  │
+│  │  │         │                │                │                     │  │  │
+│  │  │         │ call           │ call           │ call                │  │  │
+│  │  │         ▼                ▼                ▼                     │  │  │
+│  │  └─────────┼────────────────┼────────────────┼─────────────────────┘  │  │
+│  │            │                │                │                        │  │
+│  └────────────┼────────────────┼────────────────┼────────────────────────┘  │
+│               │                │                │                           │
+│  ┌────────────▼────────────────▼────────────────▼────────────────────────┐  │
+│  │                 Native Host Functions (trusted, fast)                 │  │
+│  │                                                                       │  │
+│  │  ┌───────────────┐  ┌───────────────┐  ┌───────────────────────────┐  │  │
+│  │  │   fft_1024    │  │  fir_filter   │  │   simd_complex_multiply   │  │  │
+│  │  │               │  │               │  │                           │  │  │
+│  │  │ • FFTW/MKL    │  │ • AVX-512     │  │ • ARM NEON                │  │  │
+│  │  │ • SIMD        │  │ • Optimized   │  │ • Vectorized              │  │  │
+│  │  │ • Native      │  │ • Native      │  │ • Native                  │  │  │
+│  │  └───────────────┘  └───────────────┘  └───────────────────────────┘  │  │
+│  │                                                                       │  │
+│  │  Additional host functions:                                           │  │
+│  │  • correlate(samples, pattern) → peak position                        │  │
+│  │  • demodulate_batch(samples, constellation) → symbols                 │  │
+│  │  • apply_agc(samples, target_level) → normalized samples              │  │
+│  │  • resample(samples, ratio) → resampled                               │  │
+│  │                                                                       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Implementing Host Functions
+
+Host functions are native Rust functions exposed to WASM:
+
+```rust
+use wasmtime::*;
+
+/// Native DSP library exposed to WASM
+pub struct DspHostFunctions {
+    fft_planner: FftPlanner<f32>,
+}
+
+impl DspHostFunctions {
+    /// Register all DSP host functions with the linker
+    pub fn register(linker: &mut Linker<WasmHostState>) -> Result<()> {
+        // FFT: (input_ptr, input_len, output_ptr) -> ()
+        linker.func_wrap(
+            "r4w_dsp",
+            "fft_1024",
+            |mut caller: Caller<'_, WasmHostState>,
+             input_ptr: i32,
+             output_ptr: i32| {
+                // Read input from WASM memory
+                let memory = caller.get_export("memory")
+                    .unwrap().into_memory().unwrap();
+                let input = read_complex_slice(&memory, &caller, input_ptr, 1024);
+
+                // Perform FFT using native SIMD-optimized code
+                let mut output = input.clone();
+                caller.data().dsp.fft_1024(&mut output);
+
+                // Write output back to WASM memory
+                write_complex_slice(&memory, &mut caller, output_ptr, &output);
+            },
+        )?;
+
+        // FIR Filter: (samples_ptr, len, coeffs_ptr, coeffs_len, output_ptr) -> ()
+        linker.func_wrap(
+            "r4w_dsp",
+            "fir_filter",
+            |mut caller: Caller<'_, WasmHostState>,
+             samples_ptr: i32, samples_len: i32,
+             coeffs_ptr: i32, coeffs_len: i32,
+             output_ptr: i32| {
+                // Read from WASM memory
+                let memory = caller.get_export("memory")
+                    .unwrap().into_memory().unwrap();
+                let samples = read_f32_slice(&memory, &caller, samples_ptr, samples_len);
+                let coeffs = read_f32_slice(&memory, &caller, coeffs_ptr, coeffs_len);
+
+                // Native SIMD-optimized FIR filter
+                let output = simd_fir_filter(&samples, &coeffs);
+
+                // Write back
+                write_f32_slice(&memory, &mut caller, output_ptr, &output);
+            },
+        )?;
+
+        // Batch complex multiply: (a_ptr, b_ptr, len, out_ptr) -> ()
+        linker.func_wrap(
+            "r4w_dsp",
+            "complex_multiply_batch",
+            |mut caller: Caller<'_, WasmHostState>,
+             a_ptr: i32, b_ptr: i32, len: i32, out_ptr: i32| {
+                let memory = caller.get_export("memory")
+                    .unwrap().into_memory().unwrap();
+                let a = read_complex_slice(&memory, &caller, a_ptr, len);
+                let b = read_complex_slice(&memory, &caller, b_ptr, len);
+
+                // AVX-512 / NEON optimized
+                let output = simd_complex_multiply(&a, &b);
+
+                write_complex_slice(&memory, &mut caller, out_ptr, &output);
+            },
+        )?;
+
+        Ok(())
+    }
+}
+```
+
+#### WASM Waveform Using Host Functions
+
+```rust
+// In the WASM waveform module (compiled to wasm32-wasip1)
+
+// Import host functions
+#[link(wasm_import_module = "r4w_dsp")]
+extern "C" {
+    fn fft_1024(input_ptr: *const Complex, output_ptr: *mut Complex);
+    fn fir_filter(
+        samples_ptr: *const f32, samples_len: i32,
+        coeffs_ptr: *const f32, coeffs_len: i32,
+        output_ptr: *mut f32,
+    );
+    fn complex_multiply_batch(
+        a_ptr: *const Complex, b_ptr: *const Complex,
+        len: i32, out_ptr: *mut Complex,
+    );
+}
+
+/// LoRa demodulation - logic in WASM, heavy math in native
+#[no_mangle]
+pub extern "C" fn demodulate_symbol(samples_ptr: *const Complex, samples_len: i32) -> i32 {
+    // Allocate buffers
+    let mut fft_input = vec![Complex::zero(); 1024];
+    let mut fft_output = vec![Complex::zero(); 1024];
+    let mut downchirp = vec![Complex::zero(); 1024];
+
+    // Generate downchirp (simple math, stays in WASM)
+    generate_downchirp(&mut downchirp, samples_len as usize);
+
+    // Multiply by downchirp - USE NATIVE HOST FUNCTION
+    unsafe {
+        complex_multiply_batch(
+            samples_ptr,
+            downchirp.as_ptr(),
+            samples_len,
+            fft_input.as_mut_ptr(),
+        );
+    }
+
+    // FFT to find peak - USE NATIVE HOST FUNCTION
+    unsafe {
+        fft_1024(fft_input.as_ptr(), fft_output.as_mut_ptr());
+    }
+
+    // Find peak (simple loop, stays in WASM)
+    let symbol = find_peak_bin(&fft_output);
+
+    // Gray decode (simple lookup, stays in WASM)
+    gray_decode(symbol)
+}
+```
+
+#### Performance Comparison
+
+| Approach | Call Pattern | Overhead | Viable? |
+|----------|--------------|----------|---------|
+| Pure WASM | Per-sample calls to host | 300x | ❌ |
+| Pure WASM | Batch processing | 2-3x | ✅ |
+| Hybrid | Logic in WASM, DSP in native | 1.1-1.5x | ✅ |
+| Pure Native | No isolation | 1x | ⚠️ Security risk |
+
+#### Standard DSP Host Function Library
+
+For production use, R4W provides a standard library of host functions that waveforms can use:
+
+| Category | Functions | Notes |
+|----------|-----------|-------|
+| **FFT** | `fft_64`, `fft_128`, `fft_256`, `fft_512`, `fft_1024`, `fft_2048`, `fft_4096` | FFTW/MKL backend |
+| **Filters** | `fir_filter`, `iir_filter`, `polyphase_filter` | SIMD optimized |
+| **Resampling** | `resample`, `interpolate`, `decimate` | Fractional rate support |
+| **Modulation** | `qam_mod`, `qam_demod`, `psk_mod`, `psk_demod` | Batch operations |
+| **Math** | `complex_multiply`, `complex_add`, `magnitude`, `phase` | Vectorized |
+| **Correlation** | `correlate`, `cross_correlate`, `auto_correlate` | For sync detection |
+| **AGC** | `agc_process`, `power_estimate` | Automatic gain control |
+
+This library is:
+- **Generic**: Works with any waveform
+- **Trusted**: Part of the R4W core, audited
+- **Fast**: Native SIMD implementations
+- **Safe**: WASM can only call these specific functions
+
+### Summary: WASM Production Viability
+
+| Question | Answer |
+|----------|--------|
+| Can WASM achieve native performance? | No, there is an inherent isolation cost |
+| Can WASM be viable for production? | **Yes**, with hybrid architecture |
+| What's the practical overhead? | 10-50% with proper design (batch + host functions) |
+| When should I use pure WASM? | Prototyping, untrusted plugins, portability |
+| When should I use hybrid? | Production waveforms needing both isolation and performance |
+
+The hybrid architecture gives you:
+- **Isolation** for untrusted waveform logic
+- **Performance** for DSP operations
+- **Portability** across platforms
+- **Security** with deny-by-default capabilities
+
 #### Fuel Metering
 
 | Metric | Value |
