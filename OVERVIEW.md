@@ -260,6 +260,7 @@ Measured with `tokei`:
 
 ### December 2024
 
+- **Mesh Networking Initiative** - Added Meshtastic protocol support requirements (MESH-001 to MESH-020) for LoRa-based mesh networking with 40,000+ node interoperability
 - **License Simplified** - Changed from dual MIT/Apache-2.0 to MIT only for maximum permissiveness
 - **License Files Added** - `LICENSE` and `THIRD_PARTY.md` with proper attributions
 - **Physical Layer Complete** - All 6 phases implemented:
@@ -1424,6 +1425,127 @@ if let Some(ct) = csi.poll_ciphertext() {
 | Zynq | Production SDR with FPGA PHY | Hardware crypto acceleration |
 
 For complete documentation: [docs/CRYPTO_BOUNDARY.md](./docs/CRYPTO_BOUNDARY.md)
+
+---
+
+# Mesh Networking
+
+R4W is adding mesh networking capability, starting with **Meshtastic protocol support** to enable participation in the global off-grid mesh communication network with 40,000+ active nodes.
+
+## Why Mesh Networking?
+
+| Benefit | Description |
+|---------|-------------|
+| **Off-Grid Communication** | Text messaging and position sharing without cellular/internet |
+| **Disaster Resilience** | Self-healing network topology |
+| **Long Range** | LoRa enables 10+ km links with low power |
+| **Education** | Learn real-world mesh routing algorithms |
+| **Interoperability** | Join existing Meshtastic network immediately |
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         R4W Mesh Stack                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                      Application Layer                               │   │
+│   │  ┌───────────────┐  ┌───────────────┐  ┌─────────────────────────┐   │   │
+│   │  │ Text Messaging│  │Position Share │  │     Telemetry           │   │   │
+│   │  │   (228 bytes) │  │  (GPS coords) │  │  (battery, sensors)     │   │   │
+│   │  └───────────────┘  └───────────────┘  └─────────────────────────┘   │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                      ▼                                      │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                      Mesh Routing Layer                              │   │
+│   │  ┌───────────────────────────┐  ┌─────────────────────────────────┐  │   │
+│   │  │   Managed Flood Routing   │  │    Next-Hop Routing             │  │   │
+│   │  │   (broadcasts, SNR-based) │  │    (direct messages, cached)    │  │   │
+│   │  └───────────────────────────┘  └─────────────────────────────────┘  │   │
+│   │  ┌───────────────────────────┐  ┌─────────────────────────────────┐  │   │
+│   │  │  Duplicate Detection      │  │    Neighbor Discovery           │  │   │
+│   │  │  (packet ID cache)        │  │    (NodeInfo exchange)          │  │   │
+│   │  └───────────────────────────┘  └─────────────────────────────────┘  │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                      ▼                                      │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                         MAC Layer                                    │   │
+│   │  ┌───────────────────┐  ┌──────────────────┐  ┌──────────────────┐   │   │
+│   │  │ CSMA/CA           │  │ Packet Framing   │  │ AES Encryption   │   │   │
+│   │  │ (contention window│  │ (header+payload) │  │ (AES-128/256-CTR)│   │   │
+│   │  │  scales w/ util)  │  │                  │  │                  │   │   │
+│   │  └───────────────────┘  └──────────────────┘  └──────────────────┘   │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                      ▼                                      │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                      Physical Layer (LoRa)                           │   │
+│   │  ┌───────────────────┐  ┌──────────────────┐  ┌──────────────────┐   │   │
+│   │  │ CSS Modulation    │  │ CAD (Channel     │  │ Regional Freq    │   │   │
+│   │  │ (existing r4w-core│  │  Activity Det.)  │  │ (US/EU/AU/etc)   │   │   │
+│   │  │  LoRa waveform)   │  │                  │  │                  │   │   │
+│   │  └───────────────────┘  └──────────────────┘  └──────────────────┘   │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Meshtastic Protocol Overview
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Physical** | LoRa CSS | 16-symbol preamble, sync word 0x2B, SF7-SF12 |
+| **MAC** | CSMA/CA | Channel activity detection, contention window |
+| **Routing** | Managed Flood | SNR-based rebroadcast delay (distant nodes first) |
+| **Messages** | Protobuf | Position, Text, NodeInfo, Routing, Telemetry |
+| **Security** | AES-CTR | Channel PSK-derived keys, optional encryption |
+
+## Generic Mesh Trait Design
+
+```rust
+/// Trait for mesh-capable protocols
+pub trait MeshNetwork: Send + Sync {
+    type NodeId;
+    type Packet;
+
+    /// Discover neighboring nodes
+    fn discover_neighbors(&mut self) -> Vec<Neighbor<Self::NodeId>>;
+
+    /// Get route to destination
+    fn route(&self, dest: Self::NodeId) -> Option<Route<Self::NodeId>>;
+
+    /// Forward packet through mesh
+    fn forward(&mut self, packet: Self::Packet) -> Result<(), MeshError>;
+
+    /// Handle received packet
+    fn on_receive(&mut self, packet: Self::Packet, rssi: f32, snr: f32);
+}
+
+/// Extension trait for mesh-capable waveforms
+pub trait MeshPhy: Waveform {
+    /// Check if channel is busy (CAD)
+    fn channel_busy(&self) -> bool;
+
+    /// Get received signal strength
+    fn rssi(&self) -> f32;
+
+    /// Get signal-to-noise ratio
+    fn snr(&self) -> f32;
+}
+```
+
+## Requirements Summary (MESH-001 to MESH-020)
+
+| Category | Requirements | Priority |
+|----------|--------------|----------|
+| **Physical Layer** | Symbol encoding, CAD, regional frequencies | High |
+| **MAC Layer** | CSMA/CA, packet framing, channel utilization | High |
+| **Mesh Routing** | Flood routing, next-hop, deduplication, discovery | High |
+| **Interoperability** | Protobuf messages, AES encryption, channels | High |
+| **Applications** | Text messaging, position sharing | High/Medium |
+| **Integration** | MeshNetwork trait, hardware support, simulation | Medium |
+
+See `requirements.yaml` for complete requirement details.
 
 ---
 

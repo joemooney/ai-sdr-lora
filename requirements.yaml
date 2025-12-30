@@ -1,1416 +1,404 @@
-name: sdr-waveform-explorer
-title: SDR Waveform Explorer
-description: Educational SDR tool for learning digital modulation and LoRa implementation
+name: r4w
+title: R4W - Rust for Waveforms
+description: Platform for developing, testing, and deploying SDR waveforms in Rust
 requirements:
-  # ==========================================================================
-  # EPIC: Core DSP Library
-  # ==========================================================================
-  - id: EPIC-001
-    type: Epic
-    title: Core DSP Library (sdr-core)
-    description: Core Digital Signal Processing algorithms for SDR waveform modulation and demodulation
-    status: Done
-    priority: high
-
-  - id: FR-001
-    type: Functional
-    title: LoRa CSS Modulation
-    description: Implement Chirp Spread Spectrum (CSS) modulation as used by LoRa protocol
-    status: completed
-    priority: high
-    parent: EPIC-001
-
-  - id: FR-002
-    type: Functional
-    title: LoRa CSS Demodulation
-    description: FFT-based demodulation that multiplies by downchirp and finds peak bin for symbol detection
-    status: completed
-    priority: high
-    parent: EPIC-001
-
-  - id: FR-003
-    type: Functional
-    title: Chirp Generator
-    description: Generate up-chirps and down-chirps with configurable spreading factor and bandwidth
-    status: completed
-    priority: high
-    parent: EPIC-001
-
-  - id: FR-004
-    type: Functional
-    title: FFT Processor with Peak Interpolation
-    description: FFT utilities with parabolic interpolation for sub-bin frequency estimation
-    status: completed
-    priority: high
-    parent: EPIC-001
-
-  - id: FR-005
-    type: Functional
-    title: Data Whitening
-    description: LFSR-based whitening/scrambling to balance 0s and 1s in data stream
-    status: completed
-    priority: medium
-    parent: EPIC-001
-
-  - id: FR-006
-    type: Functional
-    title: Hamming FEC Coding
-    description: Forward Error Correction using Hamming codes for error detection and correction
-    status: completed
-    priority: medium
-    parent: EPIC-001
-
-  - id: FR-007
-    type: Functional
-    title: Gray Coding
-    description: Gray code encoding/decoding to minimize bit errors between adjacent symbols
-    status: completed
-    priority: medium
-    parent: EPIC-001
-
-  - id: FR-008
-    type: Functional
-    title: Interleaving
-    description: Bit interleaving to spread burst errors across multiple codewords
-    status: completed
-    priority: medium
-    parent: EPIC-001
-
-  - id: FR-009
-    type: Functional
-    title: Preamble Detection
-    description: Detect LoRa preamble for packet synchronization
-    status: completed
-    priority: high
-    parent: EPIC-001
-
-  - id: FR-010
-    type: Functional
-    title: CFO Estimation
-    description: Carrier Frequency Offset estimation and correction using downchirp correlation
-    status: completed
-    priority: medium
-    parent: EPIC-001
-
-  - id: FR-011
-    type: Functional
-    title: Packet Framing
-    description: LoRa packet structure with header, payload, and CRC
-    status: completed
-    priority: high
-    parent: EPIC-001
-
-  # ==========================================================================
-  # EPIC: Waveform Framework
-  # ==========================================================================
-  - id: EPIC-002
-    type: Epic
-    title: Multi-Waveform Framework
-    description: Generic waveform trait and implementations for various digital modulation schemes
-    status: Done
-    priority: high
-
-  - id: FR-012
-    type: Functional
-    title: Waveform Trait
-    description: Common interface for all waveforms with modulate(), demodulate(), get_visualization() methods
-    status: completed
-    priority: high
-    parent: EPIC-002
-
-  - id: FR-013
-    type: Functional
-    title: Waveform Factory
-    description: Factory pattern to create waveforms by name string
-    status: completed
-    priority: medium
-    parent: EPIC-002
-
-  - id: FR-014
-    type: Functional
-    title: CW (Continuous Wave)
-    description: Pure sinusoidal tone - the building block for all modulation
-    status: completed
-    priority: high
-    parent: EPIC-002
-
-  - id: FR-015
-    type: Functional
-    title: OOK (On-Off Keying)
-    description: Simplest digital modulation - carrier on for 1, off for 0
-    status: completed
-    priority: high
-    parent: EPIC-002
-
-  - id: FR-016
-    type: Functional
-    title: AM (Amplitude Modulation)
-    description: Binary AM and 4-AM/PAM-4 with configurable modulation index
-    status: completed
-    priority: high
-    parent: EPIC-002
-
-  - id: FR-017
-    type: Functional
-    title: FM (Frequency Modulation)
-    description: Frequency modulation with configurable deviation
-    status: completed
-    priority: medium
-    parent: EPIC-002
-
-  - id: FR-018
-    type: Functional
-    title: FSK (Frequency Shift Keying)
-    description: BFSK and 4-FSK with continuous phase support
-    status: completed
-    priority: high
-    parent: EPIC-002
-
-  - id: FR-019
-    type: Functional
-    title: PSK (Phase Shift Keying)
-    description: BPSK, QPSK, and 8-PSK with Gray coding
-    status: completed
-    priority: high
-    parent: EPIC-002
-
-  - id: FR-020
-    type: Functional
-    title: QAM (Quadrature Amplitude Modulation)
-    description: 16-QAM, 64-QAM, and 256-QAM with power normalization
-    status: completed
-    priority: high
-    parent: EPIC-002
-
-  - id: FR-021
-    type: Functional
-    title: OFDM (Orthogonal Frequency Division Multiplexing)
-    description: Multi-carrier modulation with configurable subcarriers and cyclic prefix
-    status: completed
-    priority: medium
-    parent: EPIC-002
-
-  - id: FR-022
-    type: Functional
-    title: DSSS (Direct Sequence Spread Spectrum)
-    description: Spread spectrum using spreading codes for interference resistance
-    status: completed
-    priority: medium
-    parent: EPIC-002
-
-  - id: FR-023
-    type: Functional
-    title: FHSS (Frequency Hopping Spread Spectrum)
-    description: Frequency hopping pattern for interference avoidance
-    status: completed
-    priority: low
-    parent: EPIC-002
-
-  - id: FR-024
-    type: Functional
-    title: FMCW (Frequency Modulated Continuous Wave)
-    description: Radar-style chirped waveform for ranging applications
-    status: completed
-    priority: low
-    parent: EPIC-002
-
-  - id: FR-025
-    type: Functional
-    title: PPM (Pulse Position Modulation)
-    description: Encode data in pulse timing/position
-    status: completed
-    priority: low
-    parent: EPIC-002
-
-  - id: FR-026
-    type: Functional
-    title: UWB (Ultra-Wideband)
-    description: Ultra-wideband pulse-based modulation
-    status: completed
-    priority: low
-    parent: EPIC-002
-
-  - id: FR-027
-    type: Functional
-    title: ZigBee Modulation
-    description: IEEE 802.15.4 O-QPSK with half-sine pulse shaping
-    status: completed
-    priority: low
-    parent: EPIC-002
-
-  - id: FR-028
-    type: Functional
-    title: ADS-B Modulation
-    description: Aircraft transponder PPM encoding (Mode S)
-    status: completed
-    priority: low
-    parent: EPIC-002
-
-  # ==========================================================================
-  # EPIC: Channel Simulation
-  # ==========================================================================
-  - id: EPIC-003
-    type: Epic
-    title: Channel Simulation (sdr-sim)
-    description: Realistic wireless channel models for SDR simulation
-    status: Done
-    priority: high
-
-  - id: FR-029
-    type: Functional
-    title: AWGN Channel
-    description: Additive White Gaussian Noise channel model with configurable SNR
-    status: completed
-    priority: high
-    parent: EPIC-003
-
-  - id: FR-030
-    type: Functional
-    title: Rayleigh Fading Channel
-    description: Non-line-of-sight fading model for mobile scenarios
-    status: completed
-    priority: medium
-    parent: EPIC-003
-
-  - id: FR-031
-    type: Functional
-    title: Rician Fading Channel
-    description: Line-of-sight plus multipath fading with configurable K factor
-    status: completed
-    priority: medium
-    parent: EPIC-003
-
-  - id: FR-032
-    type: Functional
-    title: CFO Channel Impairment
-    description: Simulate carrier frequency offset between transmitter and receiver
-    status: completed
-    priority: medium
-    parent: EPIC-003
-
-  - id: FR-033
-    type: Functional
-    title: Multipath Channel
-    description: Two-ray multipath model with configurable delay and amplitude
-    status: completed
-    priority: low
-    parent: EPIC-003
-
-  - id: FR-034
-    type: Functional
-    title: SDR Device Trait
-    description: Hardware abstraction trait for SDR device independence
-    status: completed
-    priority: medium
-    parent: EPIC-003
-
-  - id: FR-035
-    type: Functional
-    title: Software SDR Simulator
-    description: Loopback simulator for testing without hardware
-    status: completed
-    priority: high
-    parent: EPIC-003
-
-  # ==========================================================================
-  # EPIC: GUI Application
-  # ==========================================================================
-  - id: EPIC-004
-    type: Epic
-    title: Educational GUI (sdr-gui)
-    description: Interactive egui application for learning SDR concepts
-    status: Done
-    priority: high
-
-  - id: FR-036
-    type: Functional
-    title: Overview View
-    description: Application overview and navigation hub
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-037
-    type: Functional
-    title: Chirp Visualization
-    description: Interactive chirp waveform display with time and frequency domain plots
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-038
-    type: Functional
-    title: LoRa Modulation View
-    description: Step-by-step visualization of LoRa TX pipeline stages
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-039
-    type: Functional
-    title: LoRa Demodulation View
-    description: Step-by-step visualization of LoRa RX pipeline stages
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-040
-    type: Functional
-    title: LoRa Full Pipeline View
-    description: Complete TX → Channel → RX visualization for LoRa
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-041
-    type: Functional
-    title: Spectrum View
-    description: Frequency domain display with FFT spectrum analysis
-    status: completed
-    priority: medium
-    parent: EPIC-004
-
-  - id: FR-042
-    type: Functional
-    title: Constellation View
-    description: I/Q constellation diagram with symbol decision regions
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-043
-    type: Functional
-    title: Waveform Lab
-    description: Interactive waveform exploration with multiple test sequences and noise simulation
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-044
-    type: Functional
-    title: Streaming View
-    description: Real-time signal visualization with oscilloscope and waterfall spectrogram
-    status: completed
-    priority: medium
-    parent: EPIC-004
-
-  - id: FR-045
-    type: Functional
-    title: Code Explorer
-    description: View Rust implementations with syntax highlighting and explanations
-    status: completed
-    priority: medium
-    parent: EPIC-004
-
-  - id: FR-046
-    type: Functional
-    title: Generic Modulation View
-    description: Modulation pipeline visualization for all waveforms (not just LoRa)
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-047
-    type: Functional
-    title: Generic Demodulation View
-    description: Demodulation pipeline visualization for all waveforms
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-048
-    type: Functional
-    title: Generic Pipeline View
-    description: Complete TX → Channel → RX visualization for all waveforms
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-049
-    type: Functional
-    title: Waveform Category System
-    description: Switch between LoRa mode and General waveform mode with tailored sidebar
-    status: completed
-    priority: medium
-    parent: EPIC-004
-
-  - id: FR-050
-    type: Functional
-    title: Multiple Test Sequences
-    description: Multiple color-coded test bit sequences for side-by-side comparison
-    status: completed
-    priority: medium
-    parent: EPIC-004
-
-  - id: FR-051
-    type: Functional
-    title: AWGN Noise Simulation UI
-    description: SNR slider control with BER calculation and color-coded quality display
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  - id: FR-052
-    type: Functional
-    title: Interactive Parameter Controls
-    description: Real-time adjustment of SF, BW, CR, SNR, CFO parameters
-    status: completed
-    priority: high
-    parent: EPIC-004
-
-  # ==========================================================================
-  # EPIC: Command Line Interface
-  # ==========================================================================
-  - id: EPIC-005
-    type: Epic
-    title: Command Line Interface (sdr-cli)
-    description: CLI tool for SDR operations and scripting
-    status: Done
-    priority: medium
-
-  - id: FR-053
-    type: Functional
-    title: TX Command
-    description: Generate I/Q samples from message and save to file
-    status: completed
-    priority: high
-    parent: EPIC-005
-
-  - id: FR-054
-    type: Functional
-    title: RX Command
-    description: Demodulate I/Q samples from file to recover message
-    status: completed
-    priority: high
-    parent: EPIC-005
-
-  - id: FR-055
-    type: Functional
-    title: Simulate Command
-    description: Full TX → Channel → RX simulation with configurable SNR
-    status: completed
-    priority: high
-    parent: EPIC-005
-
-  - id: FR-056
-    type: Functional
-    title: Info Command
-    description: Display LoRa parameter calculations (time on air, data rate, etc.)
-    status: completed
-    priority: medium
-    parent: EPIC-005
-
-  - id: FR-057
-    type: Functional
-    title: Analyze Command
-    description: I/Q sample file statistics and analysis
-    status: completed
-    priority: low
-    parent: EPIC-005
-
-  - id: FR-058
-    type: Functional
-    title: Waveform Command
-    description: List and test different waveform types from CLI
-    status: completed
-    priority: medium
-    parent: EPIC-005
-
-  # ==========================================================================
-  # EPIC: Web/WASM Deployment
-  # ==========================================================================
-  - id: EPIC-006
-    type: Epic
-    title: WebAssembly Deployment (sdr-gui-web)
-    description: Browser-based deployment of the GUI application
-    status: Done
-    priority: medium
-
-  - id: FR-059
-    type: Functional
-    title: WASM Compilation
-    description: Compile GUI to WebAssembly for browser execution
-    status: completed
-    priority: high
-    parent: EPIC-006
-
-  - id: FR-060
-    type: Functional
-    title: Platform Abstraction Layer
-    description: Conditional compilation for native vs web platform differences
-    status: completed
-    priority: high
-    parent: EPIC-006
-
-  - id: FR-061
-    type: Functional
-    title: Web Entry Point
-    description: WASM entry point with eframe WebRunner initialization
-    status: completed
-    priority: high
-    parent: EPIC-006
-
-  - id: FR-062
-    type: Functional
-    title: Trunk Build Integration
-    description: Trunk-based build system for WASM compilation and bundling
-    status: completed
-    priority: medium
-    parent: EPIC-006
-
-  # ==========================================================================
-  # EPIC: Educational Content
-  # ==========================================================================
-  - id: EPIC-007
-    type: Epic
-    title: Educational Content
-    description: Tutorials and learning materials for SDR concepts
-    status: Done
-    priority: medium
-
-  - id: FR-063
-    type: Functional
-    title: HTML Tutorial
-    description: Comprehensive HTML tutorial covering I/Q signals, sampling, modulation schemes
-    status: completed
-    priority: high
-    parent: EPIC-007
-
-  - id: FR-064
-    type: Functional
-    title: Interactive Quizzes
-    description: Tutorial quizzes with progress tracking
-    status: completed
-    priority: medium
-    parent: EPIC-007
-
-  - id: FR-065
-    type: Functional
-    title: Waveform Educational Content
-    description: Educational descriptions and characteristics for each waveform type
-    status: completed
-    priority: medium
-    parent: EPIC-007
-
-  # ==========================================================================
-  # EPIC: Build and Development
-  # ==========================================================================
-  - id: EPIC-008
-    type: Epic
-    title: Build and Development Infrastructure
-    description: Build system, testing, and development tools
-    status: Done
-    priority: medium
-
-  - id: FR-066
-    type: Functional
-    title: Makefile Build Targets
-    description: Comprehensive Makefile with build, run, test, web, and quality targets
-    status: completed
-    priority: medium
-    parent: EPIC-008
-
-  - id: FR-067
-    type: Functional
-    title: Unit Test Suite
-    description: Comprehensive unit tests for all waveforms and DSP algorithms
-    status: completed
-    priority: high
-    parent: EPIC-008
-
-  - id: FR-068
-    type: Functional
-    title: Benchmark Suite
-    description: Performance benchmarks for DSP operations
-    status: completed
-    priority: low
-    parent: EPIC-008
-
-  # ==========================================================================
-  # EPIC: FPGA Acceleration
-  # ==========================================================================
-  - id: EPIC-009
-    type: Epic
-    title: FPGA Acceleration (r4w-fpga)
-    description: Hardware acceleration for DSP operations on Xilinx Zynq FPGA
-    status: Done
-    priority: high
-
-  - id: FR-069
-    type: Functional
-    title: FPGA Accelerator Trait
-    description: Unified trait for FPGA-accelerated DSP operations with FFT, FIR, modulation, demodulation
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-070
-    type: Functional
-    title: Simulated FPGA Backend
-    description: Software simulation backend for FPGA operations without hardware
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-071
-    type: Functional
-    title: Zynq FPGA Backend
-    description: Xilinx Zynq-7020 hardware backend with memory-mapped I/O and DMA
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-072
-    type: Functional
-    title: FPGA-Accelerated LoRa Demodulation
-    description: Hardware-accelerated LoRa symbol demodulation using FPGA chirp correlation
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-073
-    type: Functional
-    title: r4w_nco IP Core
-    description: Verilog CORDIC-based Numerically Controlled Oscillator with AXI-Lite interface
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-074
-    type: Functional
-    title: r4w_chirp_gen IP Core
-    description: Verilog LoRa chirp generator with configurable SF and bandwidth
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-075
-    type: Functional
-    title: r4w_chirp_corr IP Core
-    description: Verilog LoRa chirp correlator for hardware-accelerated demodulation
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-076
-    type: Functional
-    title: r4w_fft IP Wrapper
-    description: Verilog wrapper for Xilinx FFT IP with AXI-Lite register interface
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-077
-    type: Functional
-    title: r4w_fir IP Wrapper
-    description: Verilog wrapper for Xilinx FIR IP with reloadable coefficients
-    status: completed
-    priority: high
-    parent: EPIC-009
-
-  - id: FR-078
-    type: Functional
-    title: Vivado Build Scripts
-    description: TCL scripts for Vivado project creation, block design, and bitstream generation
-    status: completed
-    priority: medium
-    parent: EPIC-009
-
-  - id: FR-079
-    type: Functional
-    title: Device Tree Overlay
-    description: Linux device tree overlay for FPGA IP core integration on PYNQ-Z2
-    status: completed
-    priority: medium
-    parent: EPIC-009
-
-  # ==========================================================================
-  # EPIC: Waveform Wizard
-  # ==========================================================================
-  - id: EPIC-010
-    type: Epic
-    title: Waveform Wizard
-    description: Interactive GUI wizard for designing waveforms and generating AI implementation prompts
-    status: completed
-    priority: medium
-
-  - id: FR-080
-    type: Functional
-    title: Waveform Specification Schema
-    description: YAML schema defining all waveform parameters (modulation, spreading, coding, timing)
-    status: completed
-    priority: high
-    parent: EPIC-010
-
-  - id: FR-081
-    type: Functional
-    title: Interactive Wizard GUI
-    description: Step-by-step GUI wizard with presets and parameter configuration for waveform design
-    status: completed
-    priority: high
-    parent: EPIC-010
-
-  - id: FR-082
-    type: Functional
-    title: YAML Specification Export
-    description: Export waveform specification as YAML for storage and reference
-    status: completed
-    priority: medium
-    parent: EPIC-010
-
-  - id: FR-083
-    type: Functional
-    title: Implementation Prompt Export
-    description: Export complete AI implementation prompt with R4W context and waveform spec
-    status: completed
-    priority: high
-    parent: EPIC-010
-
-  - id: FR-084
-    type: Functional
-    title: Export Toggle Option
-    description: Option to include or exclude implementation prompt from export (spec-only vs full prompt)
-    status: completed
-    priority: medium
-    parent: EPIC-010
-
-  - id: FR-085
-    type: Functional
-    title: GUI Category Registration Documentation
-    description: Document WaveformGroup registration required for waveforms to appear in GUI dropdown
-    status: completed
-    priority: medium
-    parent: EPIC-010
-
-  # ==========================================================================
-  # EPIC: Documentation and Tutorial
-  # ==========================================================================
-  - id: EPIC-011
-    type: Epic
-    title: Documentation and Tutorial
-    description: Educational tutorial content and documentation hosting for the R4W platform
-    status: completed
-    priority: medium
-
-  - id: FR-086
-    type: Functional
-    title: GitHub Pages Hosting
-    description: Host tutorial and documentation via GitHub Pages at joemooney.github.io/r4w
-    status: completed
-    priority: medium
-    parent: EPIC-011
-
-  - id: FR-087
-    type: Functional
-    title: Tutorial Synchronization Module
-    description: Educational content covering preamble detection, CFO estimation, and symbol timing recovery
-    status: completed
-    priority: medium
-    parent: EPIC-011
-
-  - id: FR-088
-    type: Functional
-    title: Tutorial FEC Module
-    description: Educational content covering Hamming codes, interleaving, convolutional codes, and LoRa coding rates
-    status: completed
-    priority: medium
-    parent: EPIC-011
-
-  - id: FR-089
-    type: Functional
-    title: Tutorial Code Block Formatting
-    description: Proper whitespace preservation in code examples for readable display
-    status: completed
-    priority: low
-    parent: EPIC-011
-
-  # ==========================================================================
-  # Non-Functional Requirements
-  # ==========================================================================
-  - id: NFR-001
-    type: NonFunctional
-    title: Cross-Platform Support
-    description: Run on Linux, macOS, Windows (native) and all modern browsers (WASM)
-    status: completed
-    priority: high
-
-  - id: NFR-002
-    type: NonFunctional
-    title: Real-Time Visualization
-    description: Smooth 60fps UI rendering with immediate mode GUI (egui)
-    status: completed
-    priority: high
-
-  - id: NFR-003
-    type: NonFunctional
-    title: Educational Focus
-    description: Clear visualization of signal processing concepts for learning
-    status: completed
-    priority: high
-
-  - id: NFR-004
-    type: NonFunctional
-    title: Hardware Abstraction
-    description: Design supports future integration with USRP and other SDR hardware
-    status: completed
-    priority: medium
-
-  # ==========================================================================
-  # EPIC: Physical Layer Architecture
-  # ==========================================================================
-  - id: EPIC-012
-    type: Epic
-    title: Physical Layer Architecture
-    description: Infrastructure beneath the waveform abstraction including timing, HAL, RT primitives, configuration, and observability
-    status: Done
-    priority: high
-
-  - id: FR-091
-    type: Functional
-    title: Multi-Clock Timing Model
-    description: Unified timing model with SampleClock, WallClock, HardwareClock, and SyncedTime for GPS/PTP synchronization
-    status: completed
-    priority: high
-    parent: EPIC-012
-
-  - id: FR-092
-    type: Functional
-    title: Hardware Abstraction Layer
-    description: Layered HAL with StreamHandle, TunerControl, ClockControl traits and DriverRegistry for device discovery
-    status: completed
-    priority: high
-    parent: EPIC-012
-
-  - id: FR-093
-    type: Functional
-    title: Real-Time Primitives
-    description: Lock-free RingBuffer, BufferPool, LockedBuffer, and RT thread spawning with SCHED_FIFO support
-    status: completed
-    priority: high
-    parent: EPIC-012
-
-  - id: FR-094
-    type: Functional
-    title: Configuration System
-    description: YAML-based configuration with search paths, device profiles, and runtime config loading
-    status: completed
-    priority: medium
-    parent: EPIC-012
-
-  - id: FR-095
-    type: Functional
-    title: Observability Stack
-    description: Structured logging (tracing), Prometheus metrics (Counter, Gauge, Histogram), and presets
-    status: completed
-    priority: medium
-    parent: EPIC-012
-
-  - id: FR-096
-    type: Functional
-    title: SigMF File I/O
-    description: Read and write SigMF format files for recording and playback of I/Q samples
-    status: completed
-    priority: medium
-    parent: EPIC-012
-
-  - id: FR-097
-    type: Functional
-    title: Physical Layer Developer's Guide
-    description: Comprehensive documentation covering timing, HAL, RT primitives, configuration, and observability
-    status: completed
-    priority: medium
-    parent: EPIC-012
-
-  - id: FR-098
-    type: Functional
-    title: Tick Scheduler
-    description: Discrete event simulation with TickEvent notifications, TickSubscriber trait, configurable tick resolution (samples, symbol, frame, wall-clock), time scaling, and sleep/wake mechanism
-    status: completed
-    priority: high
-    parent: EPIC-012
-
-  - id: FR-099
-    type: Functional
-    title: Real-Time Scheduler
-    description: Wall-clock event scheduler for production SDR with RadioState state machine (TX/RX coordination), guard conditions, priority scheduling, FHSS hop sequences, TDMA frames, and thread-safe event handling
-    status: completed
-    priority: high
-    parent: EPIC-012
-
-  - id: FR-100
-    type: Functional
-    title: RTL-SDR Hardware Driver
-    description: Real hardware driver for RTL-SDR (RTL2832U) with FFI bindings to librtlsdr, dynamic library loading, device discovery, synchronous sample reading, 8-bit to f64 conversion, and integration with HAL traits
-    status: completed
-    priority: high
-    parent: EPIC-012
-
-  # ==========================================================================
-  # EPIC: Plugin System
-  # ==========================================================================
-  - id: EPIC-013
-    type: Epic
-    title: Dynamic Waveform Plugin System
-    description: Runtime loading of waveform plugins as shared libraries with C ABI
-    status: Done
-    priority: medium
-
-  - id: FR-101
-    type: Functional
-    title: Plugin ABI Definition
-    description: C ABI for plugins with r4w_plugin_api_version, r4w_plugin_info, r4w_list_waveforms, r4w_create_waveform, r4w_destroy_waveform entry points
-    status: completed
-    priority: high
-    parent: EPIC-013
-
-  - id: FR-102
-    type: Functional
-    title: Plugin Manager
-    description: PluginManager for discovering, loading, and managing waveform plugins with search paths and version compatibility checking
-    status: completed
-    priority: high
-    parent: EPIC-013
-
-  - id: FR-103
-    type: Functional
-    title: Dynamic Library Loading
-    description: Optional libloading integration for real shared library loading (feature-gated with 'plugins' feature)
-    status: completed
-    priority: medium
-    parent: EPIC-013
-
-  - id: FR-104
-    type: Functional
-    title: Example Plugin
-    description: Example waveform plugin (r4w-example-plugin) demonstrating plugin API usage with PulseWaveform
-    status: completed
-    priority: medium
-    parent: EPIC-013
-
-  # ==========================================================================
-  # EPIC: Lattice FPGA Support
-  # ==========================================================================
-  - id: EPIC-014
-    type: Epic
-    title: Lattice FPGA Support
-    description: Open-source FPGA acceleration for iCE40 and ECP5 devices using Yosys/nextpnr toolchain
-    status: Done
-    priority: medium
-
-  - id: FR-105
-    type: Functional
-    title: Lattice Top-Level Design
-    description: Top-level Verilog for iCE40-HX8K and ECP5-25K with SPI interface and DAC output
-    status: completed
-    priority: high
-    parent: EPIC-014
-
-  - id: FR-106
-    type: Functional
-    title: Lattice SPI Slave
-    description: SPI slave interface IP core with 16-bit address and 32-bit data for register access
-    status: completed
-    priority: high
-    parent: EPIC-014
-
-  - id: FR-107
-    type: Functional
-    title: Lattice NCO IP
-    description: Numerically Controlled Oscillator with 24-bit phase accumulator (LUT or CORDIC mode)
-    status: completed
-    priority: high
-    parent: EPIC-014
-
-  - id: FR-108
-    type: Functional
-    title: Lattice Chirp Generator
-    description: LoRa chirp generator IP core with configurable SF 5-12 and symbol modulation
-    status: completed
-    priority: high
-    parent: EPIC-014
-
-  - id: FR-109
-    type: Functional
-    title: Open-Source Toolchain Integration
-    description: Makefile build system for Yosys synthesis, nextpnr place-and-route, and openFPGALoader programming
-    status: completed
-    priority: medium
-    parent: EPIC-014
-
-  - id: FR-110
-    type: Functional
-    title: Lattice Testbench
-    description: Icarus Verilog testbench for simulation and GTKWave waveform viewing
-    status: completed
-    priority: medium
-    parent: EPIC-014
-
-  # ==========================================================================
-  # EPIC: C/C++ FFI
-  # ==========================================================================
-  - id: EPIC-015
-    type: Epic
-    title: C/C++ Foreign Function Interface (r4w-ffi)
-    description: C and C++ bindings for R4W DSP functions enabling integration with existing C/C++ codebases
-    status: Done
-    priority: medium
-
-  - id: FR-111
-    type: Functional
-    title: C Header Generation
-    description: Auto-generated C headers via cbindgen (include/r4w.h) with all exported functions
-    status: completed
-    priority: high
-    parent: EPIC-015
-
-  - id: FR-112
-    type: Functional
-    title: C++ RAII Wrappers
-    description: Modern C++ wrapper classes (include/r4w.hpp) with RAII, exceptions, and STL integration
-    status: completed
-    priority: high
-    parent: EPIC-015
-
-  - id: FR-113
-    type: Functional
-    title: CMake Integration
-    description: CMake find module (cmake/FindR4W.cmake) for easy integration in CMake projects
-    status: completed
-    priority: medium
-    parent: EPIC-015
-
-  - id: FR-114
-    type: Functional
-    title: C/C++ Example Programs
-    description: Example C and C++ programs demonstrating R4W DSP function usage (examples/c/)
-    status: completed
-    priority: medium
-    parent: EPIC-015
-
-  - id: FR-115
-    type: Functional
-    title: Complex Number Operations
-    description: C API for complex number creation, magnitude, phase, and polar conversion
-    status: completed
-    priority: high
-    parent: EPIC-015
-
-  - id: FR-116
-    type: Functional
-    title: FFT Operations
-    description: C API for FFT forward/inverse transforms, peak finding, and interpolation
-    status: completed
-    priority: high
-    parent: EPIC-015
-
-  - id: FR-117
-    type: Functional
-    title: Waveform Operations
-    description: C API for waveform creation, modulation, demodulation, and info retrieval
-    status: completed
-    priority: high
-    parent: EPIC-015
-
-  # ==========================================================================
-  # EPIC: Waveform Sandbox
-  # ==========================================================================
-  - id: EPIC-016
-    type: Epic
-    title: Waveform Sandbox (r4w-sandbox)
-    description: Secure isolation for untrusted waveform plugins with configurable security levels
-    status: Done
-    priority: medium
-
-  - id: FR-118
-    type: Functional
-    title: Isolation Levels
-    description: Eight isolation levels (L1-L8) from Rust memory safety to air-gapped hardware isolation with clear capability definitions
-    status: completed
-    priority: high
-    parent: EPIC-016
-
-  - id: FR-119
-    type: Functional
-    title: Seccomp Profiles
-    description: Linux seccomp-bpf profiles restricting syscalls for sandboxed waveforms
-    status: completed
-    priority: high
-    parent: EPIC-016
-
-  - id: FR-120
-    type: Functional
-    title: Namespace Isolation
-    description: Linux namespace support (user, network, mount, PID, IPC) for container-like isolation
-    status: completed
-    priority: high
-    parent: EPIC-016
-
-  - id: FR-121
-    type: Functional
-    title: Capability Dropping
-    description: Linux capability dropping for principle of least privilege
-    status: completed
-    priority: medium
-    parent: EPIC-016
-
-  - id: FR-122
-    type: Functional
-    title: IPC Control Channel
-    description: Inter-process communication channel for sandbox control messages
-    status: completed
-    priority: medium
-    parent: EPIC-016
-
-  - id: FR-145
-    type: Functional
-    title: WebAssembly Isolation (L1.5)
-    description: WASM-based sandbox isolation using wasmtime with WASI capability-based security, memory isolation via linear memory, fuel-based execution limiting, and deny-by-default permissions
-    status: completed
-    priority: high
-    parent: EPIC-016
-
-  - id: FR-146
-    type: Functional
-    title: DSP Host Functions Library
-    description: Native DSP host functions exposed to WASM modules via r4w_dsp import namespace including fft, ifft, complex_multiply, complex_conjugate_multiply, compute_magnitudes, compute_power, frequency_shift, correlate, find_peak, hann_window, hamming_window, scale, and total_power. Uses rustfft with f32 directly for optimal performance.
-    status: completed
-    priority: high
-    parent: EPIC-016
-
-  - id: FR-147
-    type: Functional
-    title: WASM Host Functions Benchmarking
-    description: Benchmark suite comparing host function DSP vs pure WASM implementations for FFT, complex multiply, and demodulation pipelines. Results documented in ISOLATION_GUIDE.md showing host functions competitive at 8k+ samples.
-    status: completed
-    priority: medium
-    parent: EPIC-016
-
-  # ==========================================================================
-  # EPIC: Military Waveforms
-  # ==========================================================================
-  - id: EPIC-017
-    type: Epic
-    title: Military Waveform Frameworks
-    description: Framework implementations for military tactical waveforms with trait-based architecture for classified component substitution
-    status: Done
-    priority: medium
-
-  - id: FR-123
-    type: Functional
-    title: SINCGARS Framework
-    description: SINCGARS VHF-FM framework with FHSS (30-88 MHz), CVSD voice codec, data modes, and trait-based hopper/crypto interfaces
-    status: completed
-    priority: high
-    parent: EPIC-017
-
-  - id: FR-124
-    type: Functional
-    title: HAVEQUICK Framework
-    description: HAVEQUICK UHF anti-jam framework with AM modulation, GPS TOD integration, and trait-based WOD/hopper interfaces
-    status: completed
-    priority: high
-    parent: EPIC-017
-
-  - id: FR-125
-    type: Functional
-    title: Link-16 Framework
-    description: Link-16 JTIDS/MIDS framework with MSK modulation, TDMA structure, and trait-based crypto/network interfaces
-    status: completed
-    priority: high
-    parent: EPIC-017
-
-  - id: FR-126
-    type: Functional
-    title: P25 Framework
-    description: APCO P25 framework with C4FM/CQPSK modulation, Phase 1/2 support, and trait-based voice codec interface
-    status: completed
-    priority: medium
-    parent: EPIC-017
-
-  - id: FR-127
-    type: Functional
-    title: DMR Waveform
-    description: Digital Mobile Radio (ETSI TS 102 361) with 4-FSK, TDMA, Tier II/III modes
-    status: completed
-    priority: medium
-    parent: EPIC-017
-
-  - id: FR-128
-    type: Functional
-    title: TETRA Waveform
-    description: TETRA (ETSI EN 300 392) with Pi/4-DQPSK, TDMA, TMO/DMO modes
-    status: completed
-    priority: medium
-    parent: EPIC-017
-
-  # ==========================================================================
-  # EPIC: HF Waveforms
-  # ==========================================================================
-  - id: EPIC-018
-    type: Epic
-    title: HF Digital Waveforms
-    description: High-frequency digital waveforms for long-range communication
-    status: Done
-    priority: medium
-
-  - id: FR-129
-    type: Functional
-    title: STANAG 4285 Waveform
-    description: NATO HF modem standard with PSK modulation, convolutional coding, and multiple data rates (75-2400 bps)
-    status: completed
-    priority: high
-    parent: EPIC-018
-
-  - id: FR-130
-    type: Functional
-    title: ALE Waveform
-    description: Automatic Link Establishment (MIL-STD-188-141A) with 8-FSK tones, Golay coding, and scanning/linking
-    status: completed
-    priority: high
-    parent: EPIC-018
-
-  - id: FR-131
-    type: Functional
-    title: 3G-ALE Waveform
-    description: Third-generation ALE (MIL-STD-188-141B) with enhanced data rates and fast call capability
-    status: completed
-    priority: medium
-    parent: EPIC-018
-
-  - id: FR-132
-    type: Functional
-    title: MIL-STD-188-110 Waveform
-    description: HF data modem with multi-mode PSK, interleaving, and robust low-rate modes
-    status: completed
-    priority: medium
-    parent: EPIC-018
-
-  # ==========================================================================
-  # EPIC: Crypto Boundary
-  # ==========================================================================
-  - id: EPIC-019
-    type: Epic
-    title: Crypto Boundary Architecture
-    description: RED/BLACK separation architecture for commercial secure SDR applications
-    status: Done
-    priority: medium
-
-  - id: FR-133
-    type: Functional
-    title: CSI Architecture Design
-    description: Crypto Service Interface design with flow management, AEAD encryption, replay protection, and zeroization
-    status: completed
-    priority: high
-    parent: EPIC-019
-
-  - id: FR-134
-    type: Functional
-    title: RED/BLACK Separation
-    description: Architecture ensuring plaintext (RED) never reaches PHY layer; waveform sees only ciphertext (BLACK)
-    status: completed
-    priority: high
-    parent: EPIC-019
-
-  - id: FR-135
-    type: Functional
-    title: Crypto Boundary Documentation
-    description: Comprehensive documentation of CSI specification, message types, and integration patterns
-    status: completed
-    priority: medium
-    parent: EPIC-019
-
-  # ==========================================================================
-  # EPIC: FHSS Production Modules
-  # ==========================================================================
-  - id: EPIC-020
-    type: Epic
-    title: FHSS Production Modules
-    description: Production-ready modules for frequency hopping spread spectrum systems
-    status: Done
-    priority: high
-
-  - id: FR-136
-    type: Functional
-    title: Frequency Synthesizer Model
-    description: SynthesizerModel with Integer-N, Fractional-N, DDS, and Hybrid modes including settling time calculation
-    status: completed
-    priority: high
-    parent: EPIC-020
-
-  - id: FR-137
-    type: Functional
-    title: GPS Time Integration
-    description: GPS time support with TOD codes, PPS synchronization, and UTC/GPS conversion for HAVEQUICK
-    status: completed
-    priority: high
-    parent: EPIC-020
-
-  - id: FR-138
-    type: Functional
-    title: Multi-Radio Time Sync
-    description: IEEE 1588-style time synchronization with TimeSyncMaster/Slave for network-wide coordination
-    status: completed
-    priority: high
-    parent: EPIC-020
-
-  - id: FR-139
-    type: Functional
-    title: Anti-Jam Detection
-    description: JammingDetector with power, SNR, BER, and spectral analysis for jamming detection
-    status: completed
-    priority: high
-    parent: EPIC-020
-
-  - id: FR-140
-    type: Functional
-    title: Anti-Jam Controller
-    description: AntiJamController with automatic mode switching between normal, adaptive, and emergency modes
-    status: completed
-    priority: high
-    parent: EPIC-020
-
-  # ==========================================================================
-  # EPIC: Project Infrastructure
-  # ==========================================================================
-  - id: EPIC-021
-    type: Epic
-    title: Project Infrastructure
-    description: Project licensing, documentation, and development infrastructure
-    status: Done
-    priority: low
-
-  - id: FR-141
-    type: Functional
-    title: MIT License
-    description: Project licensed under MIT license for maximum permissiveness
-    status: completed
-    priority: medium
-    parent: EPIC-021
-
-  - id: FR-142
-    type: Functional
-    title: Third-Party Attributions
-    description: THIRD_PARTY.md documenting dependencies, specifications, and patent notices
-    status: completed
-    priority: medium
-    parent: EPIC-021
-
-  - id: FR-143
-    type: Functional
-    title: Waveform Specification System
-    description: YAML schema for defining waveforms with modulation, spreading, coding, and timing parameters
-    status: completed
-    priority: medium
-    parent: EPIC-021
-
-  - id: FR-144
-    type: Functional
-    title: Production Readiness Assessment
-    description: MISSING_FEATURES.md with honest assessment, roadmap phases, and performance benchmarks
-    status: completed
-    priority: medium
-    parent: EPIC-021
-
+- id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+  spec_id: MESH-001
+  prefix_override: MESH
+  title: Meshtastic Protocol Support
+  description: Implement Meshtastic protocol for LoRa-based mesh networking with managed flood routing, CSMA/CA channel access, and interoperability with existing Meshtastic network (40,000+ nodes). This enables R4W to participate in the global off-grid mesh communication network.
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 1-Mesh Networking
+  created_at: 2025-12-30T18:31:20.703791380Z
+  modified_at: 2025-12-30T18:31:20.703791380Z
+  req_type: Epic
+  tags:
+  - protocol
+  - lora
+  - meshtastic
+  - mesh
+- id: b1d0788a-b7fe-47e9-b2cc-89fb7aa0f77d
+  spec_id: MESH-002
+  prefix_override: MESH
+  title: Meshtastic Physical Layer - LoRa Symbol Encoding
+  description: 'Convert packet data to LoRa symbols using Meshtastic-compatible parameters: 16-symbol preamble (longer than minimum 8 for SX126x sleep compatibility), sync word 0x2B for Meshtastic network identification, and standard LoRa modulation with configurable SF/BW/CR.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 2-Mesh Networking
+  created_at: 2025-12-30T18:31:47.337041128Z
+  modified_at: 2025-12-30T18:31:47.337041128Z
+  req_type: Functional
+  tags:
+  - physical-layer
+  - lora
+  - encoding
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:31:47.337058767Z
+- id: 134a6905-0f5d-44dc-8bfe-5d7b5b515bb2
+  spec_id: MESH-003
+  prefix_override: MESH
+  title: Meshtastic Physical Layer - Channel Activity Detection (CAD)
+  description: Implement Channel Activity Detection before transmission to support CSMA/CA. Use LoRa CAD mode to detect ongoing transmissions. If channel is busy, defer transmission and enter backoff procedure.
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 3-Mesh Networking
+  created_at: 2025-12-30T18:31:56.998874497Z
+  modified_at: 2025-12-30T18:31:56.998874497Z
+  req_type: Functional
+  tags:
+  - physical-layer
+  - cad
+  - csma
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:31:56.998890864Z
+- id: 9b438fd3-b7c5-47ed-af6a-be2211b9b214
+  spec_id: MESH-004
+  prefix_override: MESH
+  title: Meshtastic Physical Layer - Regional Frequency Configuration
+  description: 'Support Meshtastic regional frequency plans for ISM bands: US (902-928 MHz), EU (863-870 MHz), CN (470-510 MHz), JP (920-925 MHz), ANZ (915-928 MHz), KR (920-923 MHz), TW (920-925 MHz), IN (865-867 MHz). Include duty cycle limits where required by regulation.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 4-Mesh Networking
+  created_at: 2025-12-30T18:32:06.357251909Z
+  modified_at: 2025-12-30T18:32:06.357251909Z
+  req_type: Functional
+  tags:
+  - frequency
+  - regulatory
+  - physical-layer
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:32:06.357269585Z
+- id: 81817744-f3d2-467d-af15-101d1403d83a
+  spec_id: MESH-005
+  prefix_override: MESH
+  title: Meshtastic MAC Layer - CSMA/CA with Contention Window
+  description: 'Implement Carrier Sense Multiple Access with Collision Avoidance (CSMA/CA). Before transmission: 1) Perform CAD, 2) If busy, select random backoff from contention window (CW), 3) CW size scales with channel utilization - larger CW for higher utilization to reduce collision probability.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 5-Mesh Networking
+  created_at: 2025-12-30T18:32:22.922084387Z
+  modified_at: 2025-12-30T18:32:22.922084387Z
+  req_type: Functional
+  tags:
+  - csma
+  - mac-layer
+  - collision-avoidance
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:32:22.922105097Z
+- id: dd84386f-df00-41a6-ad83-17ae7b0e54d3
+  spec_id: MESH-006
+  prefix_override: MESH
+  title: Meshtastic MAC Layer - Packet Framing
+  description: 'Implement Meshtastic packet structure: Header (4 bytes: destination, sender, packet ID, flags), Payload (up to 237 bytes for standard, 233 for encrypted), optional MIC for authentication. Support both encrypted (AES-128/AES-256) and plaintext modes.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 6-Mesh Networking
+  created_at: 2025-12-30T18:32:32.262592482Z
+  modified_at: 2025-12-30T18:32:32.262592482Z
+  req_type: Functional
+  tags:
+  - framing
+  - packet
+  - mac-layer
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:32:32.262611105Z
+- id: 399daf87-07fe-4cfb-be9d-67f44be67b4a
+  spec_id: MESH-007
+  prefix_override: MESH
+  title: Meshtastic MAC Layer - Channel Utilization Tracking
+  description: 'Track channel utilization percentage over time. Use this metric to: 1) Adjust contention window size, 2) Report channel congestion to mesh routing layer, 3) Implement airtime fairness. Target maximum 10% duty cycle per node to maintain network scalability.'
+  status: Draft
+  priority: Medium
+  owner: joe
+  feature: 7-Mesh Networking
+  created_at: 2025-12-30T18:32:49.606873192Z
+  modified_at: 2025-12-30T18:32:49.606873192Z
+  req_type: Functional
+  tags:
+  - utilization
+  - mac-layer
+  - fairness
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:32:49.606889163Z
+- id: 9f6da67e-dfc1-4027-9e0a-4b279078bf5c
+  spec_id: MESH-008
+  prefix_override: MESH
+  title: Meshtastic Mesh - Managed Flood Routing for Broadcasts
+  description: 'Implement managed flood routing for broadcast messages: 1) Receive packet with HopLimit > 0, 2) Decrement HopLimit, 3) Wait random time based on SNR (low SNR = smaller wait, so distant nodes flood first), 4) Listen for rebroadcasts during wait, 5) If heard rebroadcast, cancel own rebroadcast, 6) Otherwise rebroadcast. Default HopLimit=3.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 8-Mesh Networking
+  created_at: 2025-12-30T18:33:06.873322244Z
+  modified_at: 2025-12-30T18:33:06.873322244Z
+  req_type: Functional
+  tags:
+  - flood
+  - broadcast
+  - routing
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:33:06.873334410Z
+- id: c6e89949-d6fd-4e27-abea-45eb7a0dfdef
+  spec_id: MESH-009
+  prefix_override: MESH
+  title: Meshtastic Mesh - Next-Hop Routing for Direct Messages
+  description: 'Implement next-hop routing for direct (unicast) messages: 1) Maintain routing table of known nodes and their next-hop, 2) For direct messages, use cached route if available, 3) If no route known, fall back to flood routing with want_ack flag, 4) Learn routes from overheard traffic and acknowledgments.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 9-Mesh Networking
+  created_at: 2025-12-30T18:33:19.542829394Z
+  modified_at: 2025-12-30T18:33:19.542829394Z
+  req_type: Functional
+  tags:
+  - next-hop
+  - unicast
+  - routing
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:33:19.542849266Z
+- id: 10da5b7c-e7f5-45e0-bf19-4fe92ff136c7
+  spec_id: MESH-010
+  prefix_override: MESH
+  title: Meshtastic Mesh - Duplicate Packet Detection
+  description: 'Detect and discard duplicate packets to prevent routing loops and redundant processing: 1) Maintain packet ID cache (sender_id + packet_id pairs), 2) Cache entries expire after 5 minutes, 3) Reject packets with IDs already in cache, 4) Support configurable cache size (default 256 entries).'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 10-Mesh Networking
+  created_at: 2025-12-30T18:33:29.192195503Z
+  modified_at: 2025-12-30T18:33:29.192195503Z
+  req_type: Functional
+  tags:
+  - cache
+  - routing
+  - deduplication
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:33:29.192217625Z
+- id: fe5d7438-7473-4548-b45d-51063b6fddf5
+  spec_id: MESH-011
+  prefix_override: MESH
+  title: Meshtastic Mesh - Node Discovery and Neighbor Table
+  description: 'Maintain a neighbor table of discovered nodes: 1) Track node ID, last seen time, SNR, hop count, 2) Update table on received packets, 3) Age out nodes not seen in 2 hours, 4) Support NodeInfo exchange packets containing device metadata (hardware model, firmware version, user-set name).'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 11-Mesh Networking
+  created_at: 2025-12-30T18:33:39.516228052Z
+  modified_at: 2025-12-30T18:33:39.516228052Z
+  req_type: Functional
+  tags:
+  - neighbor
+  - discovery
+  - routing
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:33:39.516245732Z
+- id: d7d07440-c7f9-44e7-853a-85481c6a67c3
+  spec_id: MESH-012
+  prefix_override: MESH
+  title: Meshtastic Interop - Protocol Buffer Message Format
+  description: 'Implement Meshtastic protobuf message format for full interoperability: 1) Use official Meshtastic .proto definitions, 2) Support core message types: Position, Text, NodeInfo, Routing, Telemetry, 3) Support channel/app layer messages, 4) Generate Rust bindings using prost or protobuf crate.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 12-Mesh Networking
+  created_at: 2025-12-30T18:33:56.924811543Z
+  modified_at: 2025-12-30T18:33:56.924811543Z
+  req_type: Functional
+  tags:
+  - protobuf
+  - interop
+  - messages
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:33:56.924828245Z
+- id: 807ec542-d636-4cc1-b59d-2634ab7f472e
+  spec_id: MESH-013
+  prefix_override: MESH
+  title: Meshtastic Interop - AES Encryption Compatibility
+  description: 'Implement Meshtastic-compatible encryption: 1) AES-128-CTR or AES-256-CTR encryption, 2) Key derived from channel PSK using standard Meshtastic derivation, 3) Nonce = packet_id + sender_id, 4) Support default channel key for public mesh, 5) Support custom PSK channels for private groups.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 13-Mesh Networking
+  created_at: 2025-12-30T18:34:06.606337548Z
+  modified_at: 2025-12-30T18:34:06.606337548Z
+  req_type: Functional
+  tags:
+  - aes
+  - encryption
+  - interop
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:34:06.606354462Z
+- id: c8388dbd-6702-4597-8ea7-e11f05a0711d
+  spec_id: MESH-014
+  prefix_override: MESH
+  title: Meshtastic Interop - Channel Configuration
+  description: 'Support Meshtastic channel configuration: 1) Primary channel + up to 7 secondary channels, 2) Channel settings: name, PSK, uplink/downlink enabled, 3) Modem presets: LongFast, LongSlow, LongModerate, MediumFast, MediumSlow, ShortFast, ShortSlow, 4) Each preset maps to specific SF/BW/CR combination.'
+  status: Draft
+  priority: Medium
+  owner: joe
+  feature: 14-Mesh Networking
+  created_at: 2025-12-30T18:34:16.397667432Z
+  modified_at: 2025-12-30T18:34:16.397667432Z
+  req_type: Functional
+  tags:
+  - interop
+  - config
+  - channel
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:34:16.397684785Z
+- id: eb3c91c3-5370-4ff7-b0be-3da7b2d0befa
+  spec_id: MESH-015
+  prefix_override: MESH
+  title: Meshtastic App - Text Messaging
+  description: 'Implement text message send/receive: 1) Support broadcast messages to all nodes, 2) Support direct messages to specific node ID, 3) Message acknowledgment for direct messages, 4) Store-and-forward for offline nodes (optional), 5) Maximum message size 228 bytes UTF-8.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 15-Mesh Networking
+  created_at: 2025-12-30T18:34:30.970516731Z
+  modified_at: 2025-12-30T18:34:30.970516731Z
+  req_type: Functional
+  tags:
+  - app
+  - text
+  - messaging
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:34:30.970534128Z
+- id: 203557d6-a6f0-42e2-a749-c9deb9610110
+  spec_id: MESH-016
+  prefix_override: MESH
+  title: Meshtastic App - Position Sharing
+  description: 'Implement GPS position sharing: 1) Broadcast local GPS position at configurable interval (default 15 min), 2) Store received positions in node database, 3) Support position precision reduction for privacy, 4) Include altitude, speed, heading when available, 5) Smart position updates (only send on significant movement).'
+  status: Draft
+  priority: Medium
+  owner: joe
+  feature: 16-Mesh Networking
+  created_at: 2025-12-30T18:34:41.008292847Z
+  modified_at: 2025-12-30T18:34:41.008292847Z
+  req_type: Functional
+  tags:
+  - app
+  - gps
+  - position
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:34:41.008314263Z
+- id: dd56a184-0d96-447d-a5b1-a0270f60e8cf
+  spec_id: MESH-017
+  prefix_override: MESH
+  title: Meshtastic Integration - R4W MeshNetwork Trait
+  description: 'Design generic MeshNetwork trait that Meshtastic implements, enabling future mesh protocols: 1) MeshNetwork trait with discover_neighbors(), route(), forward() methods, 2) MeshPhy trait extending Waveform with channel_busy(), rssi(), snr() methods, 3) Meshtastic as first implementation, 4) Trait design should support future Link-16, ALE mesh implementations.'
+  status: Draft
+  priority: High
+  owner: joe
+  feature: 17-Mesh Networking
+  created_at: 2025-12-30T18:34:53.292225704Z
+  modified_at: 2025-12-30T18:34:53.292225704Z
+  req_type: Functional
+  tags:
+  - integration
+  - architecture
+  - trait
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:34:53.292250101Z
+- id: b6bfb83d-6440-4280-8a5a-0c14cd6b0192
+  spec_id: MESH-018
+  prefix_override: MESH
+  title: Meshtastic Hardware - SX126x Radio Support
+  description: 'Support Semtech SX1262/SX1268 LoRa transceivers commonly used in Meshtastic devices: 1) SPI interface for register access, 2) CAD mode for channel activity detection, 3) Packet mode with hardware CRC, 4) RSSI/SNR readback, 5) Support via embedded-hal traits for portability. Target devices: Heltec V3, LILYGO T-Beam, RAK WisBlock.'
+  status: Draft
+  priority: Medium
+  owner: joe
+  feature: 18-Mesh Networking
+  created_at: 2025-12-30T18:35:04.632283047Z
+  modified_at: 2025-12-30T18:35:04.632283047Z
+  req_type: Functional
+  tags:
+  - sx126x
+  - radio
+  - hardware
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:35:04.632300526Z
+- id: c93364e4-32e7-487e-b60c-960bd91a06d3
+  spec_id: MESH-019
+  prefix_override: MESH
+  title: Meshtastic Testing - Multi-Node Simulation
+  description: 'Enable testing mesh routing without physical hardware: 1) Simulate multiple Meshtastic nodes in software, 2) Configurable node topology and link quality, 3) Packet loss and delay injection, 4) Visualization of routing decisions, 5) Integration with r4w-sim channel models (AWGN, Rayleigh fading).'
+  status: Draft
+  priority: Medium
+  owner: joe
+  feature: 19-Mesh Networking
+  created_at: 2025-12-30T18:35:14.680235464Z
+  modified_at: 2025-12-30T18:35:14.680235464Z
+  req_type: Functional
+  tags:
+  - testing
+  - multi-node
+  - simulation
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:35:14.680255021Z
+- id: 5387d63d-e3db-4a37-9969-d71bfb4c2bb7
+  spec_id: MESH-020
+  prefix_override: MESH
+  title: Meshtastic NFR - Low Power Operation
+  description: 'Support battery-powered operation: 1) Radio sleep between receive windows, 2) Configurable receive duty cycle (100%, 50%, 20%), 3) Target <50mA average current at 100% duty cycle, <10mA at 20%, 4) Wake-on-preamble using SX126x CAD, 5) Scheduled transmit windows to allow coordinated sleep.'
+  status: Draft
+  priority: Medium
+  owner: joe
+  feature: Mesh Networking
+  created_at: 2025-12-30T18:35:26.159312602Z
+  modified_at: 2025-12-30T18:35:26.159312602Z
+  req_type: NonFunctional
+  tags:
+  - nfr
+  - power
+  - battery
+  relationships:
+  - rel_type: Parent
+    target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
+    created_at: 2025-12-30T18:35:26.159332074Z
 id_config:
   format: SingleLevel
   numbering: Global
@@ -1452,13 +440,13 @@ id_config:
   - name: Folder
     prefix: FOLDER
     description: Organizational folders
+  - name: Meta
+    prefix: META
+    description: Database configuration and templates
 features: []
-next_feature_number: 1
-next_spec_number: 148
-prefix_counters:
-  EPIC: 21
-  FR: 147
-  NFR: 4
+next_feature_number: 20
+next_spec_number: 21
+prefix_counters: {}
 relationship_definitions:
 - name: parent
   display_name: Parent
@@ -1570,34 +558,102 @@ relationship_definitions:
   built_in: true
   color: null
   icon: null
+- name: created_by
+  display_name: Created By
+  description: User who created the requirement
+  inverse: null
+  symmetric: false
+  cardinality: ManyToOne
+  source_types: []
+  target_types: []
+  built_in: true
+  color: '#4a9eff'
+  icon: null
+- name: assigned_to
+  display_name: Assigned To
+  description: User assigned to work on this requirement
+  inverse: null
+  symmetric: false
+  cardinality: ManyToOne
+  source_types: []
+  target_types: []
+  built_in: true
+  color: '#22c55e'
+  icon: null
+- name: tested_by
+  display_name: Tested By
+  description: User who tested/verified the requirement
+  inverse: null
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: '#f59e0b'
+  icon: null
+- name: closed_by
+  display_name: Closed By
+  description: User who closed/completed the requirement
+  inverse: null
+  symmetric: false
+  cardinality: ManyToOne
+  source_types: []
+  target_types: []
+  built_in: true
+  color: '#ef4444'
+  icon: null
+- name: sprint_assignment
+  display_name: Assigned to Sprint
+  description: Assigns a requirement to a Sprint for work planning
+  inverse: sprint_contains
+  symmetric: false
+  cardinality: ManyToOne
+  source_types: []
+  target_types:
+  - Sprint
+  built_in: true
+  color: '#7c3aed'
+  icon: null
+- name: sprint_contains
+  display_name: Sprint Contains
+  description: Items assigned to this Sprint
+  inverse: sprint_assignment
+  symmetric: false
+  cardinality: OneToMany
+  source_types:
+  - Sprint
+  target_types: []
+  built_in: true
+  color: '#7c3aed'
+  icon: null
 reaction_definitions:
 - name: resolved
-  emoji: "\u2705"
+  emoji: ✅
   label: Resolved
   description: Mark comment as resolved/addressed
   built_in: true
 - name: rejected
-  emoji: "\u274C"
+  emoji: ❌
   label: Rejected
   description: Mark comment as rejected/declined
   built_in: true
 - name: thumbs_up
-  emoji: "\U0001F44D"
+  emoji: 👍
   label: Thumbs Up
   description: Agree or approve
   built_in: true
 - name: thumbs_down
-  emoji: "\U0001F44E"
+  emoji: 👎
   label: Thumbs Down
   description: Disagree or disapprove
   built_in: true
 - name: question
-  emoji: "\u2753"
+  emoji: ❓
   label: Question
   description: Needs clarification
   built_in: true
 - name: important
-  emoji: "\u26A0\uFE0F"
+  emoji: ⚠️
   label: Important
   description: Mark as important/attention needed
   built_in: true
@@ -1615,6 +671,110 @@ type_definitions:
   prefix: NFR
   built_in: true
   stateless: false
+- name: System
+  display_name: System
+  description: System-level requirements
+  prefix: SYS
+  built_in: true
+  stateless: false
+- name: User
+  display_name: User Story
+  description: User stories and user requirements
+  prefix: US
+  built_in: true
+  stateless: false
+- name: ChangeRequest
+  display_name: Change Request
+  description: Change requests for existing functionality
+  prefix: CR
+  statuses:
+  - Draft
+  - Submitted
+  - Under Review
+  - Approved
+  - Rejected
+  - In Progress
+  - Implemented
+  - Verified
+  - Closed
+  custom_fields:
+  - name: impact
+    label: Impact Level
+    field_type: select
+    required: false
+    options:
+    - Low
+    - Medium
+    - High
+    - Critical
+    description: Impact of this change on the system
+    order: 1
+  - name: requested_by
+    label: Requested By
+    field_type: user
+    required: false
+    description: User who requested this change
+    order: 2
+  - name: target_release
+    label: Target Release
+    field_type: text
+    required: false
+    description: Target release version for this change
+    order: 3
+  - name: justification
+    label: Justification
+    field_type: text
+    required: true
+    description: Business justification for the change
+    order: 4
+  built_in: true
+  color: '#9333ea'
+  stateless: false
+- name: Bug
+  display_name: Bug
+  description: Bug reports and defects
+  prefix: BUG
+  statuses:
+  - New
+  - Confirmed
+  - In Progress
+  - Fixed
+  - Verified
+  - Closed
+  - Won't Fix
+  custom_fields:
+  - name: severity
+    label: Severity
+    field_type: select
+    required: false
+    options:
+    - Critical
+    - Major
+    - Minor
+    - Trivial
+    description: Severity of the bug
+    order: 1
+  - name: steps_to_reproduce
+    label: Steps to Reproduce
+    field_type: text
+    required: false
+    description: Steps to reproduce the bug
+    order: 2
+  - name: expected_behavior
+    label: Expected Behavior
+    field_type: text
+    required: false
+    description: What should happen
+    order: 3
+  - name: actual_behavior
+    label: Actual Behavior
+    field_type: text
+    required: false
+    description: What actually happens
+    order: 4
+  built_in: true
+  color: '#dc2626'
+  stateless: false
 - name: Epic
   display_name: Epic
   description: Large feature or initiative spanning multiple stories
@@ -1624,8 +784,177 @@ type_definitions:
   - Ready
   - In Progress
   - Done
+  custom_fields:
+  - name: business_value
+    label: Business Value
+    field_type: text
+    required: false
+    description: Business value or benefit of this epic
+    order: 1
+  - name: target_release
+    label: Target Release
+    field_type: text
+    required: false
+    description: Target release or milestone
+    order: 2
+  - name: story_points
+    label: Story Points
+    field_type: number
+    required: false
+    description: Estimated story points
+    order: 3
   built_in: true
   color: '#7c3aed'
   stateless: false
+- name: Story
+  display_name: Story
+  description: User story for agile development
+  prefix: STORY
+  statuses:
+  - Draft
+  - Ready
+  - In Progress
+  - In Review
+  - Done
+  custom_fields:
+  - name: acceptance_criteria
+    label: Acceptance Criteria
+    field_type: textarea
+    required: false
+    description: Criteria that must be met for the story to be complete
+    order: 1
+  - name: story_points
+    label: Story Points
+    field_type: number
+    required: false
+    description: Estimated story points
+    order: 2
+  - name: assignee
+    label: Assignee
+    field_type: user
+    required: false
+    description: Person assigned to this story
+    order: 3
+  built_in: true
+  color: '#10b981'
+  stateless: false
+- name: Task
+  display_name: Task
+  description: Implementation task or work item
+  prefix: TASK
+  statuses:
+  - To Do
+  - In Progress
+  - In Review
+  - Done
+  custom_fields:
+  - name: estimate_hours
+    label: Estimate (hours)
+    field_type: number
+    required: false
+    description: Estimated hours to complete
+    order: 1
+  - name: assignee
+    label: Assignee
+    field_type: user
+    required: false
+    description: Person assigned to this task
+    order: 2
+  built_in: true
+  color: '#0891b2'
+  stateless: false
+- name: Spike
+  display_name: Spike
+  description: Research or investigation task with time-boxed exploration
+  prefix: SPIKE
+  statuses:
+  - Planned
+  - In Progress
+  - Completed
+  custom_fields:
+  - name: research_question
+    label: Research Question
+    field_type: text
+    required: true
+    description: The question or problem to investigate
+    order: 1
+  - name: time_box
+    label: Time Box
+    field_type: text
+    required: false
+    description: Time allocated for investigation (e.g., '2 days')
+    order: 2
+  - name: findings
+    label: Findings
+    field_type: textarea
+    required: false
+    description: Results and conclusions from the investigation
+    order: 3
+  - name: recommendation
+    label: Recommendation
+    field_type: text
+    required: false
+    description: Recommended next steps based on findings
+    order: 4
+  built_in: true
+  color: '#ca8a04'
+  stateless: false
+- name: Sprint
+  display_name: Sprint
+  description: Time-boxed iteration for work planning
+  prefix: SPRINT
+  statuses:
+  - Draft
+  - In Progress
+  - Completed
+  - Archived
+  custom_fields:
+  - name: sprint_number
+    label: Sprint Number
+    field_type: number
+    required: false
+    description: Sequential sprint number
+    order: 1
+  - name: start_date
+    label: Start Date
+    field_type: text
+    required: false
+    description: Sprint start date (YYYY-MM-DD)
+    order: 2
+  - name: end_date
+    label: End Date
+    field_type: text
+    required: false
+    description: Sprint end date (YYYY-MM-DD)
+    order: 3
+  - name: sprint_goal
+    label: Sprint Goal
+    field_type: text
+    required: false
+    description: Goal or theme for this sprint
+    order: 4
+  - name: velocity
+    label: Planned Velocity
+    field_type: number
+    required: false
+    description: Planned story points for this sprint
+    order: 5
+  built_in: true
+  color: '#7c3aed'
+  stateless: false
+- name: Folder
+  display_name: Folder
+  description: Organizational container for grouping related requirements
+  prefix: FLD
+  built_in: true
+  color: '#6b7280'
+  stateless: true
+- name: Meta
+  display_name: Meta
+  description: Database configuration, prompts, skills, and templates
+  prefix: META
+  built_in: true
+  color: '#8b5cf6'
+  stateless: true
 allowed_prefixes: []
 restrict_prefixes: false

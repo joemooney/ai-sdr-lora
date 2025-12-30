@@ -1,0 +1,1631 @@
+name: sdr-waveform-explorer
+title: SDR Waveform Explorer
+description: Educational SDR tool for learning digital modulation and LoRa implementation
+requirements:
+  # ==========================================================================
+  # EPIC: Core DSP Library
+  # ==========================================================================
+  - id: EPIC-001
+    type: Epic
+    title: Core DSP Library (sdr-core)
+    description: Core Digital Signal Processing algorithms for SDR waveform modulation and demodulation
+    status: Done
+    priority: high
+
+  - id: FR-001
+    type: Functional
+    title: LoRa CSS Modulation
+    description: Implement Chirp Spread Spectrum (CSS) modulation as used by LoRa protocol
+    status: completed
+    priority: high
+    parent: EPIC-001
+
+  - id: FR-002
+    type: Functional
+    title: LoRa CSS Demodulation
+    description: FFT-based demodulation that multiplies by downchirp and finds peak bin for symbol detection
+    status: completed
+    priority: high
+    parent: EPIC-001
+
+  - id: FR-003
+    type: Functional
+    title: Chirp Generator
+    description: Generate up-chirps and down-chirps with configurable spreading factor and bandwidth
+    status: completed
+    priority: high
+    parent: EPIC-001
+
+  - id: FR-004
+    type: Functional
+    title: FFT Processor with Peak Interpolation
+    description: FFT utilities with parabolic interpolation for sub-bin frequency estimation
+    status: completed
+    priority: high
+    parent: EPIC-001
+
+  - id: FR-005
+    type: Functional
+    title: Data Whitening
+    description: LFSR-based whitening/scrambling to balance 0s and 1s in data stream
+    status: completed
+    priority: medium
+    parent: EPIC-001
+
+  - id: FR-006
+    type: Functional
+    title: Hamming FEC Coding
+    description: Forward Error Correction using Hamming codes for error detection and correction
+    status: completed
+    priority: medium
+    parent: EPIC-001
+
+  - id: FR-007
+    type: Functional
+    title: Gray Coding
+    description: Gray code encoding/decoding to minimize bit errors between adjacent symbols
+    status: completed
+    priority: medium
+    parent: EPIC-001
+
+  - id: FR-008
+    type: Functional
+    title: Interleaving
+    description: Bit interleaving to spread burst errors across multiple codewords
+    status: completed
+    priority: medium
+    parent: EPIC-001
+
+  - id: FR-009
+    type: Functional
+    title: Preamble Detection
+    description: Detect LoRa preamble for packet synchronization
+    status: completed
+    priority: high
+    parent: EPIC-001
+
+  - id: FR-010
+    type: Functional
+    title: CFO Estimation
+    description: Carrier Frequency Offset estimation and correction using downchirp correlation
+    status: completed
+    priority: medium
+    parent: EPIC-001
+
+  - id: FR-011
+    type: Functional
+    title: Packet Framing
+    description: LoRa packet structure with header, payload, and CRC
+    status: completed
+    priority: high
+    parent: EPIC-001
+
+  # ==========================================================================
+  # EPIC: Waveform Framework
+  # ==========================================================================
+  - id: EPIC-002
+    type: Epic
+    title: Multi-Waveform Framework
+    description: Generic waveform trait and implementations for various digital modulation schemes
+    status: Done
+    priority: high
+
+  - id: FR-012
+    type: Functional
+    title: Waveform Trait
+    description: Common interface for all waveforms with modulate(), demodulate(), get_visualization() methods
+    status: completed
+    priority: high
+    parent: EPIC-002
+
+  - id: FR-013
+    type: Functional
+    title: Waveform Factory
+    description: Factory pattern to create waveforms by name string
+    status: completed
+    priority: medium
+    parent: EPIC-002
+
+  - id: FR-014
+    type: Functional
+    title: CW (Continuous Wave)
+    description: Pure sinusoidal tone - the building block for all modulation
+    status: completed
+    priority: high
+    parent: EPIC-002
+
+  - id: FR-015
+    type: Functional
+    title: OOK (On-Off Keying)
+    description: Simplest digital modulation - carrier on for 1, off for 0
+    status: completed
+    priority: high
+    parent: EPIC-002
+
+  - id: FR-016
+    type: Functional
+    title: AM (Amplitude Modulation)
+    description: Binary AM and 4-AM/PAM-4 with configurable modulation index
+    status: completed
+    priority: high
+    parent: EPIC-002
+
+  - id: FR-017
+    type: Functional
+    title: FM (Frequency Modulation)
+    description: Frequency modulation with configurable deviation
+    status: completed
+    priority: medium
+    parent: EPIC-002
+
+  - id: FR-018
+    type: Functional
+    title: FSK (Frequency Shift Keying)
+    description: BFSK and 4-FSK with continuous phase support
+    status: completed
+    priority: high
+    parent: EPIC-002
+
+  - id: FR-019
+    type: Functional
+    title: PSK (Phase Shift Keying)
+    description: BPSK, QPSK, and 8-PSK with Gray coding
+    status: completed
+    priority: high
+    parent: EPIC-002
+
+  - id: FR-020
+    type: Functional
+    title: QAM (Quadrature Amplitude Modulation)
+    description: 16-QAM, 64-QAM, and 256-QAM with power normalization
+    status: completed
+    priority: high
+    parent: EPIC-002
+
+  - id: FR-021
+    type: Functional
+    title: OFDM (Orthogonal Frequency Division Multiplexing)
+    description: Multi-carrier modulation with configurable subcarriers and cyclic prefix
+    status: completed
+    priority: medium
+    parent: EPIC-002
+
+  - id: FR-022
+    type: Functional
+    title: DSSS (Direct Sequence Spread Spectrum)
+    description: Spread spectrum using spreading codes for interference resistance
+    status: completed
+    priority: medium
+    parent: EPIC-002
+
+  - id: FR-023
+    type: Functional
+    title: FHSS (Frequency Hopping Spread Spectrum)
+    description: Frequency hopping pattern for interference avoidance
+    status: completed
+    priority: low
+    parent: EPIC-002
+
+  - id: FR-024
+    type: Functional
+    title: FMCW (Frequency Modulated Continuous Wave)
+    description: Radar-style chirped waveform for ranging applications
+    status: completed
+    priority: low
+    parent: EPIC-002
+
+  - id: FR-025
+    type: Functional
+    title: PPM (Pulse Position Modulation)
+    description: Encode data in pulse timing/position
+    status: completed
+    priority: low
+    parent: EPIC-002
+
+  - id: FR-026
+    type: Functional
+    title: UWB (Ultra-Wideband)
+    description: Ultra-wideband pulse-based modulation
+    status: completed
+    priority: low
+    parent: EPIC-002
+
+  - id: FR-027
+    type: Functional
+    title: ZigBee Modulation
+    description: IEEE 802.15.4 O-QPSK with half-sine pulse shaping
+    status: completed
+    priority: low
+    parent: EPIC-002
+
+  - id: FR-028
+    type: Functional
+    title: ADS-B Modulation
+    description: Aircraft transponder PPM encoding (Mode S)
+    status: completed
+    priority: low
+    parent: EPIC-002
+
+  # ==========================================================================
+  # EPIC: Channel Simulation
+  # ==========================================================================
+  - id: EPIC-003
+    type: Epic
+    title: Channel Simulation (sdr-sim)
+    description: Realistic wireless channel models for SDR simulation
+    status: Done
+    priority: high
+
+  - id: FR-029
+    type: Functional
+    title: AWGN Channel
+    description: Additive White Gaussian Noise channel model with configurable SNR
+    status: completed
+    priority: high
+    parent: EPIC-003
+
+  - id: FR-030
+    type: Functional
+    title: Rayleigh Fading Channel
+    description: Non-line-of-sight fading model for mobile scenarios
+    status: completed
+    priority: medium
+    parent: EPIC-003
+
+  - id: FR-031
+    type: Functional
+    title: Rician Fading Channel
+    description: Line-of-sight plus multipath fading with configurable K factor
+    status: completed
+    priority: medium
+    parent: EPIC-003
+
+  - id: FR-032
+    type: Functional
+    title: CFO Channel Impairment
+    description: Simulate carrier frequency offset between transmitter and receiver
+    status: completed
+    priority: medium
+    parent: EPIC-003
+
+  - id: FR-033
+    type: Functional
+    title: Multipath Channel
+    description: Two-ray multipath model with configurable delay and amplitude
+    status: completed
+    priority: low
+    parent: EPIC-003
+
+  - id: FR-034
+    type: Functional
+    title: SDR Device Trait
+    description: Hardware abstraction trait for SDR device independence
+    status: completed
+    priority: medium
+    parent: EPIC-003
+
+  - id: FR-035
+    type: Functional
+    title: Software SDR Simulator
+    description: Loopback simulator for testing without hardware
+    status: completed
+    priority: high
+    parent: EPIC-003
+
+  # ==========================================================================
+  # EPIC: GUI Application
+  # ==========================================================================
+  - id: EPIC-004
+    type: Epic
+    title: Educational GUI (sdr-gui)
+    description: Interactive egui application for learning SDR concepts
+    status: Done
+    priority: high
+
+  - id: FR-036
+    type: Functional
+    title: Overview View
+    description: Application overview and navigation hub
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-037
+    type: Functional
+    title: Chirp Visualization
+    description: Interactive chirp waveform display with time and frequency domain plots
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-038
+    type: Functional
+    title: LoRa Modulation View
+    description: Step-by-step visualization of LoRa TX pipeline stages
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-039
+    type: Functional
+    title: LoRa Demodulation View
+    description: Step-by-step visualization of LoRa RX pipeline stages
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-040
+    type: Functional
+    title: LoRa Full Pipeline View
+    description: Complete TX → Channel → RX visualization for LoRa
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-041
+    type: Functional
+    title: Spectrum View
+    description: Frequency domain display with FFT spectrum analysis
+    status: completed
+    priority: medium
+    parent: EPIC-004
+
+  - id: FR-042
+    type: Functional
+    title: Constellation View
+    description: I/Q constellation diagram with symbol decision regions
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-043
+    type: Functional
+    title: Waveform Lab
+    description: Interactive waveform exploration with multiple test sequences and noise simulation
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-044
+    type: Functional
+    title: Streaming View
+    description: Real-time signal visualization with oscilloscope and waterfall spectrogram
+    status: completed
+    priority: medium
+    parent: EPIC-004
+
+  - id: FR-045
+    type: Functional
+    title: Code Explorer
+    description: View Rust implementations with syntax highlighting and explanations
+    status: completed
+    priority: medium
+    parent: EPIC-004
+
+  - id: FR-046
+    type: Functional
+    title: Generic Modulation View
+    description: Modulation pipeline visualization for all waveforms (not just LoRa)
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-047
+    type: Functional
+    title: Generic Demodulation View
+    description: Demodulation pipeline visualization for all waveforms
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-048
+    type: Functional
+    title: Generic Pipeline View
+    description: Complete TX → Channel → RX visualization for all waveforms
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-049
+    type: Functional
+    title: Waveform Category System
+    description: Switch between LoRa mode and General waveform mode with tailored sidebar
+    status: completed
+    priority: medium
+    parent: EPIC-004
+
+  - id: FR-050
+    type: Functional
+    title: Multiple Test Sequences
+    description: Multiple color-coded test bit sequences for side-by-side comparison
+    status: completed
+    priority: medium
+    parent: EPIC-004
+
+  - id: FR-051
+    type: Functional
+    title: AWGN Noise Simulation UI
+    description: SNR slider control with BER calculation and color-coded quality display
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  - id: FR-052
+    type: Functional
+    title: Interactive Parameter Controls
+    description: Real-time adjustment of SF, BW, CR, SNR, CFO parameters
+    status: completed
+    priority: high
+    parent: EPIC-004
+
+  # ==========================================================================
+  # EPIC: Command Line Interface
+  # ==========================================================================
+  - id: EPIC-005
+    type: Epic
+    title: Command Line Interface (sdr-cli)
+    description: CLI tool for SDR operations and scripting
+    status: Done
+    priority: medium
+
+  - id: FR-053
+    type: Functional
+    title: TX Command
+    description: Generate I/Q samples from message and save to file
+    status: completed
+    priority: high
+    parent: EPIC-005
+
+  - id: FR-054
+    type: Functional
+    title: RX Command
+    description: Demodulate I/Q samples from file to recover message
+    status: completed
+    priority: high
+    parent: EPIC-005
+
+  - id: FR-055
+    type: Functional
+    title: Simulate Command
+    description: Full TX → Channel → RX simulation with configurable SNR
+    status: completed
+    priority: high
+    parent: EPIC-005
+
+  - id: FR-056
+    type: Functional
+    title: Info Command
+    description: Display LoRa parameter calculations (time on air, data rate, etc.)
+    status: completed
+    priority: medium
+    parent: EPIC-005
+
+  - id: FR-057
+    type: Functional
+    title: Analyze Command
+    description: I/Q sample file statistics and analysis
+    status: completed
+    priority: low
+    parent: EPIC-005
+
+  - id: FR-058
+    type: Functional
+    title: Waveform Command
+    description: List and test different waveform types from CLI
+    status: completed
+    priority: medium
+    parent: EPIC-005
+
+  # ==========================================================================
+  # EPIC: Web/WASM Deployment
+  # ==========================================================================
+  - id: EPIC-006
+    type: Epic
+    title: WebAssembly Deployment (sdr-gui-web)
+    description: Browser-based deployment of the GUI application
+    status: Done
+    priority: medium
+
+  - id: FR-059
+    type: Functional
+    title: WASM Compilation
+    description: Compile GUI to WebAssembly for browser execution
+    status: completed
+    priority: high
+    parent: EPIC-006
+
+  - id: FR-060
+    type: Functional
+    title: Platform Abstraction Layer
+    description: Conditional compilation for native vs web platform differences
+    status: completed
+    priority: high
+    parent: EPIC-006
+
+  - id: FR-061
+    type: Functional
+    title: Web Entry Point
+    description: WASM entry point with eframe WebRunner initialization
+    status: completed
+    priority: high
+    parent: EPIC-006
+
+  - id: FR-062
+    type: Functional
+    title: Trunk Build Integration
+    description: Trunk-based build system for WASM compilation and bundling
+    status: completed
+    priority: medium
+    parent: EPIC-006
+
+  # ==========================================================================
+  # EPIC: Educational Content
+  # ==========================================================================
+  - id: EPIC-007
+    type: Epic
+    title: Educational Content
+    description: Tutorials and learning materials for SDR concepts
+    status: Done
+    priority: medium
+
+  - id: FR-063
+    type: Functional
+    title: HTML Tutorial
+    description: Comprehensive HTML tutorial covering I/Q signals, sampling, modulation schemes
+    status: completed
+    priority: high
+    parent: EPIC-007
+
+  - id: FR-064
+    type: Functional
+    title: Interactive Quizzes
+    description: Tutorial quizzes with progress tracking
+    status: completed
+    priority: medium
+    parent: EPIC-007
+
+  - id: FR-065
+    type: Functional
+    title: Waveform Educational Content
+    description: Educational descriptions and characteristics for each waveform type
+    status: completed
+    priority: medium
+    parent: EPIC-007
+
+  # ==========================================================================
+  # EPIC: Build and Development
+  # ==========================================================================
+  - id: EPIC-008
+    type: Epic
+    title: Build and Development Infrastructure
+    description: Build system, testing, and development tools
+    status: Done
+    priority: medium
+
+  - id: FR-066
+    type: Functional
+    title: Makefile Build Targets
+    description: Comprehensive Makefile with build, run, test, web, and quality targets
+    status: completed
+    priority: medium
+    parent: EPIC-008
+
+  - id: FR-067
+    type: Functional
+    title: Unit Test Suite
+    description: Comprehensive unit tests for all waveforms and DSP algorithms
+    status: completed
+    priority: high
+    parent: EPIC-008
+
+  - id: FR-068
+    type: Functional
+    title: Benchmark Suite
+    description: Performance benchmarks for DSP operations
+    status: completed
+    priority: low
+    parent: EPIC-008
+
+  # ==========================================================================
+  # EPIC: FPGA Acceleration
+  # ==========================================================================
+  - id: EPIC-009
+    type: Epic
+    title: FPGA Acceleration (r4w-fpga)
+    description: Hardware acceleration for DSP operations on Xilinx Zynq FPGA
+    status: Done
+    priority: high
+
+  - id: FR-069
+    type: Functional
+    title: FPGA Accelerator Trait
+    description: Unified trait for FPGA-accelerated DSP operations with FFT, FIR, modulation, demodulation
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-070
+    type: Functional
+    title: Simulated FPGA Backend
+    description: Software simulation backend for FPGA operations without hardware
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-071
+    type: Functional
+    title: Zynq FPGA Backend
+    description: Xilinx Zynq-7020 hardware backend with memory-mapped I/O and DMA
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-072
+    type: Functional
+    title: FPGA-Accelerated LoRa Demodulation
+    description: Hardware-accelerated LoRa symbol demodulation using FPGA chirp correlation
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-073
+    type: Functional
+    title: r4w_nco IP Core
+    description: Verilog CORDIC-based Numerically Controlled Oscillator with AXI-Lite interface
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-074
+    type: Functional
+    title: r4w_chirp_gen IP Core
+    description: Verilog LoRa chirp generator with configurable SF and bandwidth
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-075
+    type: Functional
+    title: r4w_chirp_corr IP Core
+    description: Verilog LoRa chirp correlator for hardware-accelerated demodulation
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-076
+    type: Functional
+    title: r4w_fft IP Wrapper
+    description: Verilog wrapper for Xilinx FFT IP with AXI-Lite register interface
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-077
+    type: Functional
+    title: r4w_fir IP Wrapper
+    description: Verilog wrapper for Xilinx FIR IP with reloadable coefficients
+    status: completed
+    priority: high
+    parent: EPIC-009
+
+  - id: FR-078
+    type: Functional
+    title: Vivado Build Scripts
+    description: TCL scripts for Vivado project creation, block design, and bitstream generation
+    status: completed
+    priority: medium
+    parent: EPIC-009
+
+  - id: FR-079
+    type: Functional
+    title: Device Tree Overlay
+    description: Linux device tree overlay for FPGA IP core integration on PYNQ-Z2
+    status: completed
+    priority: medium
+    parent: EPIC-009
+
+  # ==========================================================================
+  # EPIC: Waveform Wizard
+  # ==========================================================================
+  - id: EPIC-010
+    type: Epic
+    title: Waveform Wizard
+    description: Interactive GUI wizard for designing waveforms and generating AI implementation prompts
+    status: completed
+    priority: medium
+
+  - id: FR-080
+    type: Functional
+    title: Waveform Specification Schema
+    description: YAML schema defining all waveform parameters (modulation, spreading, coding, timing)
+    status: completed
+    priority: high
+    parent: EPIC-010
+
+  - id: FR-081
+    type: Functional
+    title: Interactive Wizard GUI
+    description: Step-by-step GUI wizard with presets and parameter configuration for waveform design
+    status: completed
+    priority: high
+    parent: EPIC-010
+
+  - id: FR-082
+    type: Functional
+    title: YAML Specification Export
+    description: Export waveform specification as YAML for storage and reference
+    status: completed
+    priority: medium
+    parent: EPIC-010
+
+  - id: FR-083
+    type: Functional
+    title: Implementation Prompt Export
+    description: Export complete AI implementation prompt with R4W context and waveform spec
+    status: completed
+    priority: high
+    parent: EPIC-010
+
+  - id: FR-084
+    type: Functional
+    title: Export Toggle Option
+    description: Option to include or exclude implementation prompt from export (spec-only vs full prompt)
+    status: completed
+    priority: medium
+    parent: EPIC-010
+
+  - id: FR-085
+    type: Functional
+    title: GUI Category Registration Documentation
+    description: Document WaveformGroup registration required for waveforms to appear in GUI dropdown
+    status: completed
+    priority: medium
+    parent: EPIC-010
+
+  # ==========================================================================
+  # EPIC: Documentation and Tutorial
+  # ==========================================================================
+  - id: EPIC-011
+    type: Epic
+    title: Documentation and Tutorial
+    description: Educational tutorial content and documentation hosting for the R4W platform
+    status: completed
+    priority: medium
+
+  - id: FR-086
+    type: Functional
+    title: GitHub Pages Hosting
+    description: Host tutorial and documentation via GitHub Pages at joemooney.github.io/r4w
+    status: completed
+    priority: medium
+    parent: EPIC-011
+
+  - id: FR-087
+    type: Functional
+    title: Tutorial Synchronization Module
+    description: Educational content covering preamble detection, CFO estimation, and symbol timing recovery
+    status: completed
+    priority: medium
+    parent: EPIC-011
+
+  - id: FR-088
+    type: Functional
+    title: Tutorial FEC Module
+    description: Educational content covering Hamming codes, interleaving, convolutional codes, and LoRa coding rates
+    status: completed
+    priority: medium
+    parent: EPIC-011
+
+  - id: FR-089
+    type: Functional
+    title: Tutorial Code Block Formatting
+    description: Proper whitespace preservation in code examples for readable display
+    status: completed
+    priority: low
+    parent: EPIC-011
+
+  # ==========================================================================
+  # Non-Functional Requirements
+  # ==========================================================================
+  - id: NFR-001
+    type: NonFunctional
+    title: Cross-Platform Support
+    description: Run on Linux, macOS, Windows (native) and all modern browsers (WASM)
+    status: completed
+    priority: high
+
+  - id: NFR-002
+    type: NonFunctional
+    title: Real-Time Visualization
+    description: Smooth 60fps UI rendering with immediate mode GUI (egui)
+    status: completed
+    priority: high
+
+  - id: NFR-003
+    type: NonFunctional
+    title: Educational Focus
+    description: Clear visualization of signal processing concepts for learning
+    status: completed
+    priority: high
+
+  - id: NFR-004
+    type: NonFunctional
+    title: Hardware Abstraction
+    description: Design supports future integration with USRP and other SDR hardware
+    status: completed
+    priority: medium
+
+  # ==========================================================================
+  # EPIC: Physical Layer Architecture
+  # ==========================================================================
+  - id: EPIC-012
+    type: Epic
+    title: Physical Layer Architecture
+    description: Infrastructure beneath the waveform abstraction including timing, HAL, RT primitives, configuration, and observability
+    status: Done
+    priority: high
+
+  - id: FR-091
+    type: Functional
+    title: Multi-Clock Timing Model
+    description: Unified timing model with SampleClock, WallClock, HardwareClock, and SyncedTime for GPS/PTP synchronization
+    status: completed
+    priority: high
+    parent: EPIC-012
+
+  - id: FR-092
+    type: Functional
+    title: Hardware Abstraction Layer
+    description: Layered HAL with StreamHandle, TunerControl, ClockControl traits and DriverRegistry for device discovery
+    status: completed
+    priority: high
+    parent: EPIC-012
+
+  - id: FR-093
+    type: Functional
+    title: Real-Time Primitives
+    description: Lock-free RingBuffer, BufferPool, LockedBuffer, and RT thread spawning with SCHED_FIFO support
+    status: completed
+    priority: high
+    parent: EPIC-012
+
+  - id: FR-094
+    type: Functional
+    title: Configuration System
+    description: YAML-based configuration with search paths, device profiles, and runtime config loading
+    status: completed
+    priority: medium
+    parent: EPIC-012
+
+  - id: FR-095
+    type: Functional
+    title: Observability Stack
+    description: Structured logging (tracing), Prometheus metrics (Counter, Gauge, Histogram), and presets
+    status: completed
+    priority: medium
+    parent: EPIC-012
+
+  - id: FR-096
+    type: Functional
+    title: SigMF File I/O
+    description: Read and write SigMF format files for recording and playback of I/Q samples
+    status: completed
+    priority: medium
+    parent: EPIC-012
+
+  - id: FR-097
+    type: Functional
+    title: Physical Layer Developer's Guide
+    description: Comprehensive documentation covering timing, HAL, RT primitives, configuration, and observability
+    status: completed
+    priority: medium
+    parent: EPIC-012
+
+  - id: FR-098
+    type: Functional
+    title: Tick Scheduler
+    description: Discrete event simulation with TickEvent notifications, TickSubscriber trait, configurable tick resolution (samples, symbol, frame, wall-clock), time scaling, and sleep/wake mechanism
+    status: completed
+    priority: high
+    parent: EPIC-012
+
+  - id: FR-099
+    type: Functional
+    title: Real-Time Scheduler
+    description: Wall-clock event scheduler for production SDR with RadioState state machine (TX/RX coordination), guard conditions, priority scheduling, FHSS hop sequences, TDMA frames, and thread-safe event handling
+    status: completed
+    priority: high
+    parent: EPIC-012
+
+  - id: FR-100
+    type: Functional
+    title: RTL-SDR Hardware Driver
+    description: Real hardware driver for RTL-SDR (RTL2832U) with FFI bindings to librtlsdr, dynamic library loading, device discovery, synchronous sample reading, 8-bit to f64 conversion, and integration with HAL traits
+    status: completed
+    priority: high
+    parent: EPIC-012
+
+  # ==========================================================================
+  # EPIC: Plugin System
+  # ==========================================================================
+  - id: EPIC-013
+    type: Epic
+    title: Dynamic Waveform Plugin System
+    description: Runtime loading of waveform plugins as shared libraries with C ABI
+    status: Done
+    priority: medium
+
+  - id: FR-101
+    type: Functional
+    title: Plugin ABI Definition
+    description: C ABI for plugins with r4w_plugin_api_version, r4w_plugin_info, r4w_list_waveforms, r4w_create_waveform, r4w_destroy_waveform entry points
+    status: completed
+    priority: high
+    parent: EPIC-013
+
+  - id: FR-102
+    type: Functional
+    title: Plugin Manager
+    description: PluginManager for discovering, loading, and managing waveform plugins with search paths and version compatibility checking
+    status: completed
+    priority: high
+    parent: EPIC-013
+
+  - id: FR-103
+    type: Functional
+    title: Dynamic Library Loading
+    description: Optional libloading integration for real shared library loading (feature-gated with 'plugins' feature)
+    status: completed
+    priority: medium
+    parent: EPIC-013
+
+  - id: FR-104
+    type: Functional
+    title: Example Plugin
+    description: Example waveform plugin (r4w-example-plugin) demonstrating plugin API usage with PulseWaveform
+    status: completed
+    priority: medium
+    parent: EPIC-013
+
+  # ==========================================================================
+  # EPIC: Lattice FPGA Support
+  # ==========================================================================
+  - id: EPIC-014
+    type: Epic
+    title: Lattice FPGA Support
+    description: Open-source FPGA acceleration for iCE40 and ECP5 devices using Yosys/nextpnr toolchain
+    status: Done
+    priority: medium
+
+  - id: FR-105
+    type: Functional
+    title: Lattice Top-Level Design
+    description: Top-level Verilog for iCE40-HX8K and ECP5-25K with SPI interface and DAC output
+    status: completed
+    priority: high
+    parent: EPIC-014
+
+  - id: FR-106
+    type: Functional
+    title: Lattice SPI Slave
+    description: SPI slave interface IP core with 16-bit address and 32-bit data for register access
+    status: completed
+    priority: high
+    parent: EPIC-014
+
+  - id: FR-107
+    type: Functional
+    title: Lattice NCO IP
+    description: Numerically Controlled Oscillator with 24-bit phase accumulator (LUT or CORDIC mode)
+    status: completed
+    priority: high
+    parent: EPIC-014
+
+  - id: FR-108
+    type: Functional
+    title: Lattice Chirp Generator
+    description: LoRa chirp generator IP core with configurable SF 5-12 and symbol modulation
+    status: completed
+    priority: high
+    parent: EPIC-014
+
+  - id: FR-109
+    type: Functional
+    title: Open-Source Toolchain Integration
+    description: Makefile build system for Yosys synthesis, nextpnr place-and-route, and openFPGALoader programming
+    status: completed
+    priority: medium
+    parent: EPIC-014
+
+  - id: FR-110
+    type: Functional
+    title: Lattice Testbench
+    description: Icarus Verilog testbench for simulation and GTKWave waveform viewing
+    status: completed
+    priority: medium
+    parent: EPIC-014
+
+  # ==========================================================================
+  # EPIC: C/C++ FFI
+  # ==========================================================================
+  - id: EPIC-015
+    type: Epic
+    title: C/C++ Foreign Function Interface (r4w-ffi)
+    description: C and C++ bindings for R4W DSP functions enabling integration with existing C/C++ codebases
+    status: Done
+    priority: medium
+
+  - id: FR-111
+    type: Functional
+    title: C Header Generation
+    description: Auto-generated C headers via cbindgen (include/r4w.h) with all exported functions
+    status: completed
+    priority: high
+    parent: EPIC-015
+
+  - id: FR-112
+    type: Functional
+    title: C++ RAII Wrappers
+    description: Modern C++ wrapper classes (include/r4w.hpp) with RAII, exceptions, and STL integration
+    status: completed
+    priority: high
+    parent: EPIC-015
+
+  - id: FR-113
+    type: Functional
+    title: CMake Integration
+    description: CMake find module (cmake/FindR4W.cmake) for easy integration in CMake projects
+    status: completed
+    priority: medium
+    parent: EPIC-015
+
+  - id: FR-114
+    type: Functional
+    title: C/C++ Example Programs
+    description: Example C and C++ programs demonstrating R4W DSP function usage (examples/c/)
+    status: completed
+    priority: medium
+    parent: EPIC-015
+
+  - id: FR-115
+    type: Functional
+    title: Complex Number Operations
+    description: C API for complex number creation, magnitude, phase, and polar conversion
+    status: completed
+    priority: high
+    parent: EPIC-015
+
+  - id: FR-116
+    type: Functional
+    title: FFT Operations
+    description: C API for FFT forward/inverse transforms, peak finding, and interpolation
+    status: completed
+    priority: high
+    parent: EPIC-015
+
+  - id: FR-117
+    type: Functional
+    title: Waveform Operations
+    description: C API for waveform creation, modulation, demodulation, and info retrieval
+    status: completed
+    priority: high
+    parent: EPIC-015
+
+  # ==========================================================================
+  # EPIC: Waveform Sandbox
+  # ==========================================================================
+  - id: EPIC-016
+    type: Epic
+    title: Waveform Sandbox (r4w-sandbox)
+    description: Secure isolation for untrusted waveform plugins with configurable security levels
+    status: Done
+    priority: medium
+
+  - id: FR-118
+    type: Functional
+    title: Isolation Levels
+    description: Eight isolation levels (L1-L8) from Rust memory safety to air-gapped hardware isolation with clear capability definitions
+    status: completed
+    priority: high
+    parent: EPIC-016
+
+  - id: FR-119
+    type: Functional
+    title: Seccomp Profiles
+    description: Linux seccomp-bpf profiles restricting syscalls for sandboxed waveforms
+    status: completed
+    priority: high
+    parent: EPIC-016
+
+  - id: FR-120
+    type: Functional
+    title: Namespace Isolation
+    description: Linux namespace support (user, network, mount, PID, IPC) for container-like isolation
+    status: completed
+    priority: high
+    parent: EPIC-016
+
+  - id: FR-121
+    type: Functional
+    title: Capability Dropping
+    description: Linux capability dropping for principle of least privilege
+    status: completed
+    priority: medium
+    parent: EPIC-016
+
+  - id: FR-122
+    type: Functional
+    title: IPC Control Channel
+    description: Inter-process communication channel for sandbox control messages
+    status: completed
+    priority: medium
+    parent: EPIC-016
+
+  - id: FR-145
+    type: Functional
+    title: WebAssembly Isolation (L1.5)
+    description: WASM-based sandbox isolation using wasmtime with WASI capability-based security, memory isolation via linear memory, fuel-based execution limiting, and deny-by-default permissions
+    status: completed
+    priority: high
+    parent: EPIC-016
+
+  - id: FR-146
+    type: Functional
+    title: DSP Host Functions Library
+    description: Native DSP host functions exposed to WASM modules via r4w_dsp import namespace including fft, ifft, complex_multiply, complex_conjugate_multiply, compute_magnitudes, compute_power, frequency_shift, correlate, find_peak, hann_window, hamming_window, scale, and total_power. Uses rustfft with f32 directly for optimal performance.
+    status: completed
+    priority: high
+    parent: EPIC-016
+
+  - id: FR-147
+    type: Functional
+    title: WASM Host Functions Benchmarking
+    description: Benchmark suite comparing host function DSP vs pure WASM implementations for FFT, complex multiply, and demodulation pipelines. Results documented in ISOLATION_GUIDE.md showing host functions competitive at 8k+ samples.
+    status: completed
+    priority: medium
+    parent: EPIC-016
+
+  # ==========================================================================
+  # EPIC: Military Waveforms
+  # ==========================================================================
+  - id: EPIC-017
+    type: Epic
+    title: Military Waveform Frameworks
+    description: Framework implementations for military tactical waveforms with trait-based architecture for classified component substitution
+    status: Done
+    priority: medium
+
+  - id: FR-123
+    type: Functional
+    title: SINCGARS Framework
+    description: SINCGARS VHF-FM framework with FHSS (30-88 MHz), CVSD voice codec, data modes, and trait-based hopper/crypto interfaces
+    status: completed
+    priority: high
+    parent: EPIC-017
+
+  - id: FR-124
+    type: Functional
+    title: HAVEQUICK Framework
+    description: HAVEQUICK UHF anti-jam framework with AM modulation, GPS TOD integration, and trait-based WOD/hopper interfaces
+    status: completed
+    priority: high
+    parent: EPIC-017
+
+  - id: FR-125
+    type: Functional
+    title: Link-16 Framework
+    description: Link-16 JTIDS/MIDS framework with MSK modulation, TDMA structure, and trait-based crypto/network interfaces
+    status: completed
+    priority: high
+    parent: EPIC-017
+
+  - id: FR-126
+    type: Functional
+    title: P25 Framework
+    description: APCO P25 framework with C4FM/CQPSK modulation, Phase 1/2 support, and trait-based voice codec interface
+    status: completed
+    priority: medium
+    parent: EPIC-017
+
+  - id: FR-127
+    type: Functional
+    title: DMR Waveform
+    description: Digital Mobile Radio (ETSI TS 102 361) with 4-FSK, TDMA, Tier II/III modes
+    status: completed
+    priority: medium
+    parent: EPIC-017
+
+  - id: FR-128
+    type: Functional
+    title: TETRA Waveform
+    description: TETRA (ETSI EN 300 392) with Pi/4-DQPSK, TDMA, TMO/DMO modes
+    status: completed
+    priority: medium
+    parent: EPIC-017
+
+  # ==========================================================================
+  # EPIC: HF Waveforms
+  # ==========================================================================
+  - id: EPIC-018
+    type: Epic
+    title: HF Digital Waveforms
+    description: High-frequency digital waveforms for long-range communication
+    status: Done
+    priority: medium
+
+  - id: FR-129
+    type: Functional
+    title: STANAG 4285 Waveform
+    description: NATO HF modem standard with PSK modulation, convolutional coding, and multiple data rates (75-2400 bps)
+    status: completed
+    priority: high
+    parent: EPIC-018
+
+  - id: FR-130
+    type: Functional
+    title: ALE Waveform
+    description: Automatic Link Establishment (MIL-STD-188-141A) with 8-FSK tones, Golay coding, and scanning/linking
+    status: completed
+    priority: high
+    parent: EPIC-018
+
+  - id: FR-131
+    type: Functional
+    title: 3G-ALE Waveform
+    description: Third-generation ALE (MIL-STD-188-141B) with enhanced data rates and fast call capability
+    status: completed
+    priority: medium
+    parent: EPIC-018
+
+  - id: FR-132
+    type: Functional
+    title: MIL-STD-188-110 Waveform
+    description: HF data modem with multi-mode PSK, interleaving, and robust low-rate modes
+    status: completed
+    priority: medium
+    parent: EPIC-018
+
+  # ==========================================================================
+  # EPIC: Crypto Boundary
+  # ==========================================================================
+  - id: EPIC-019
+    type: Epic
+    title: Crypto Boundary Architecture
+    description: RED/BLACK separation architecture for commercial secure SDR applications
+    status: Done
+    priority: medium
+
+  - id: FR-133
+    type: Functional
+    title: CSI Architecture Design
+    description: Crypto Service Interface design with flow management, AEAD encryption, replay protection, and zeroization
+    status: completed
+    priority: high
+    parent: EPIC-019
+
+  - id: FR-134
+    type: Functional
+    title: RED/BLACK Separation
+    description: Architecture ensuring plaintext (RED) never reaches PHY layer; waveform sees only ciphertext (BLACK)
+    status: completed
+    priority: high
+    parent: EPIC-019
+
+  - id: FR-135
+    type: Functional
+    title: Crypto Boundary Documentation
+    description: Comprehensive documentation of CSI specification, message types, and integration patterns
+    status: completed
+    priority: medium
+    parent: EPIC-019
+
+  # ==========================================================================
+  # EPIC: FHSS Production Modules
+  # ==========================================================================
+  - id: EPIC-020
+    type: Epic
+    title: FHSS Production Modules
+    description: Production-ready modules for frequency hopping spread spectrum systems
+    status: Done
+    priority: high
+
+  - id: FR-136
+    type: Functional
+    title: Frequency Synthesizer Model
+    description: SynthesizerModel with Integer-N, Fractional-N, DDS, and Hybrid modes including settling time calculation
+    status: completed
+    priority: high
+    parent: EPIC-020
+
+  - id: FR-137
+    type: Functional
+    title: GPS Time Integration
+    description: GPS time support with TOD codes, PPS synchronization, and UTC/GPS conversion for HAVEQUICK
+    status: completed
+    priority: high
+    parent: EPIC-020
+
+  - id: FR-138
+    type: Functional
+    title: Multi-Radio Time Sync
+    description: IEEE 1588-style time synchronization with TimeSyncMaster/Slave for network-wide coordination
+    status: completed
+    priority: high
+    parent: EPIC-020
+
+  - id: FR-139
+    type: Functional
+    title: Anti-Jam Detection
+    description: JammingDetector with power, SNR, BER, and spectral analysis for jamming detection
+    status: completed
+    priority: high
+    parent: EPIC-020
+
+  - id: FR-140
+    type: Functional
+    title: Anti-Jam Controller
+    description: AntiJamController with automatic mode switching between normal, adaptive, and emergency modes
+    status: completed
+    priority: high
+    parent: EPIC-020
+
+  # ==========================================================================
+  # EPIC: Project Infrastructure
+  # ==========================================================================
+  - id: EPIC-021
+    type: Epic
+    title: Project Infrastructure
+    description: Project licensing, documentation, and development infrastructure
+    status: Done
+    priority: low
+
+  - id: FR-141
+    type: Functional
+    title: MIT License
+    description: Project licensed under MIT license for maximum permissiveness
+    status: completed
+    priority: medium
+    parent: EPIC-021
+
+  - id: FR-142
+    type: Functional
+    title: Third-Party Attributions
+    description: THIRD_PARTY.md documenting dependencies, specifications, and patent notices
+    status: completed
+    priority: medium
+    parent: EPIC-021
+
+  - id: FR-143
+    type: Functional
+    title: Waveform Specification System
+    description: YAML schema for defining waveforms with modulation, spreading, coding, and timing parameters
+    status: completed
+    priority: medium
+    parent: EPIC-021
+
+  - id: FR-144
+    type: Functional
+    title: Production Readiness Assessment
+    description: MISSING_FEATURES.md with honest assessment, roadmap phases, and performance benchmarks
+    status: completed
+    priority: medium
+    parent: EPIC-021
+
+id_config:
+  format: SingleLevel
+  numbering: Global
+  digits: 3
+  requirement_types:
+  - name: Functional
+    prefix: FR
+    description: Functional requirements
+  - name: Non-Functional
+    prefix: NFR
+    description: Non-functional requirements (performance, security, etc.)
+  - name: System
+    prefix: SR
+    description: System-level requirements
+  - name: User
+    prefix: UR
+    description: User story requirements
+  - name: Change Request
+    prefix: CR
+    description: Change requests for modifications to existing functionality
+  - name: Bug
+    prefix: BUG
+    description: Bug reports and defects
+  - name: Epic
+    prefix: EPIC
+    description: Large features spanning multiple stories
+  - name: Story
+    prefix: STORY
+    description: User stories for agile development
+  - name: Task
+    prefix: TASK
+    description: Individual work items
+  - name: Spike
+    prefix: SPIKE
+    description: Research and investigation tasks
+  - name: Sprint
+    prefix: SPRINT
+    description: Sprint planning containers
+  - name: Folder
+    prefix: FOLDER
+    description: Organizational folders
+features: []
+next_feature_number: 1
+next_spec_number: 148
+prefix_counters:
+  EPIC: 21
+  FR: 147
+  NFR: 4
+relationship_definitions:
+- name: parent
+  display_name: Parent
+  description: Hierarchical parent requirement
+  inverse: child
+  symmetric: false
+  cardinality: OneToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: child
+  display_name: Child
+  description: Hierarchical child requirement
+  inverse: parent
+  symmetric: false
+  cardinality: ManyToOne
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: verifies
+  display_name: Verifies
+  description: Test or verification relationship
+  inverse: verified_by
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: verified_by
+  display_name: Verified By
+  description: Verified by a test requirement
+  inverse: verifies
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: duplicate
+  display_name: Duplicate
+  description: Marks requirements as duplicates
+  inverse: null
+  symmetric: true
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: references
+  display_name: References
+  description: General reference link
+  inverse: null
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: depends_on
+  display_name: Depends On
+  description: Dependency relationship
+  inverse: dependency_of
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: dependency_of
+  display_name: Dependency Of
+  description: Inverse dependency relationship
+  inverse: depends_on
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: implements
+  display_name: Implements
+  description: Implementation relationship
+  inverse: implemented_by
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+- name: implemented_by
+  display_name: Implemented By
+  description: Inverse implementation relationship
+  inverse: implements
+  symmetric: false
+  cardinality: ManyToMany
+  source_types: []
+  target_types: []
+  built_in: true
+  color: null
+  icon: null
+reaction_definitions:
+- name: resolved
+  emoji: "\u2705"
+  label: Resolved
+  description: Mark comment as resolved/addressed
+  built_in: true
+- name: rejected
+  emoji: "\u274C"
+  label: Rejected
+  description: Mark comment as rejected/declined
+  built_in: true
+- name: thumbs_up
+  emoji: "\U0001F44D"
+  label: Thumbs Up
+  description: Agree or approve
+  built_in: true
+- name: thumbs_down
+  emoji: "\U0001F44E"
+  label: Thumbs Down
+  description: Disagree or disapprove
+  built_in: true
+- name: question
+  emoji: "\u2753"
+  label: Question
+  description: Needs clarification
+  built_in: true
+- name: important
+  emoji: "\u26A0\uFE0F"
+  label: Important
+  description: Mark as important/attention needed
+  built_in: true
+meta_counters: {}
+type_definitions:
+- name: Functional
+  display_name: Functional
+  description: Functional requirements describing system behavior
+  prefix: FR
+  built_in: true
+  stateless: false
+- name: NonFunctional
+  display_name: Non-Functional
+  description: Non-functional requirements (performance, security, etc.)
+  prefix: NFR
+  built_in: true
+  stateless: false
+- name: Epic
+  display_name: Epic
+  description: Large feature or initiative spanning multiple stories
+  prefix: EPIC
+  statuses:
+  - Draft
+  - Ready
+  - In Progress
+  - Done
+  built_in: true
+  color: '#7c3aed'
+  stateless: false
+allowed_prefixes: []
+restrict_prefixes: false
