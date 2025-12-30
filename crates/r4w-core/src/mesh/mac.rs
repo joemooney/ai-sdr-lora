@@ -20,6 +20,40 @@
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
+/// Simple pseudo-random number generator for CSMA backoff.
+/// Uses a Linear Congruential Generator (LCG) with state seeded from system time.
+#[derive(Debug)]
+struct SimpleRng {
+    state: u64,
+}
+
+impl SimpleRng {
+    /// Create a new RNG seeded from system time and a counter
+    fn new() -> Self {
+        // Seed from system time - use both seconds and nanos for entropy
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default();
+        let seed = now.as_secs().wrapping_mul(1_000_000_000) ^ now.subsec_nanos() as u64;
+        Self { state: seed | 1 } // Ensure odd for LCG
+    }
+
+    /// Generate next random u32
+    fn next_u32(&mut self) -> u32 {
+        // LCG parameters from Numerical Recipes
+        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (self.state >> 32) as u32
+    }
+
+    /// Generate random u32 in range [0, max)
+    fn next_u32_max(&mut self, max: u32) -> u32 {
+        if max == 0 {
+            return 0;
+        }
+        self.next_u32() % max
+    }
+}
+
 /// Channel state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelState {
@@ -153,6 +187,8 @@ struct BackoffState {
     attempts: u8,
     /// Time when backoff started
     start_time: Option<Instant>,
+    /// Random number generator for backoff
+    rng: SimpleRng,
 }
 
 impl BackoffState {
@@ -162,17 +198,18 @@ impl BackoffState {
             remaining_slots: 0,
             attempts: 0,
             start_time: None,
+            rng: SimpleRng::new(),
         }
     }
 
     fn start(&mut self, utilization: f32, cw_min: u32, cw_max: u32) {
         // Scale contention window with utilization
-        let base_cw = cw_min.min((cw_min as f32 * (1.0 + utilization * 10.0)) as u32);
+        // Use .max() to scale UP with utilization (higher utilization = larger window)
+        let base_cw = cw_min.max((cw_min as f32 * (1.0 + utilization * 10.0)) as u32);
         self.contention_window = base_cw.min(cw_max);
 
-        // Pick random backoff
-        let random = (Instant::now().elapsed().as_nanos() % self.contention_window as u128) as u32;
-        self.remaining_slots = random;
+        // Pick random backoff using proper RNG
+        self.remaining_slots = self.rng.next_u32_max(self.contention_window);
         self.start_time = Some(Instant::now());
         self.attempts += 1;
     }

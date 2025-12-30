@@ -1682,6 +1682,30 @@ The mesh networking module is now implemented in `crates/r4w-core/src/mesh/`:
 | `mac.rs` | CSMA/CA `MacLayer`, `CsmaConfig`, `ChannelUtilization` | ✅ Complete |
 | `meshtastic.rs` | `MeshtasticNode`, `ModemPreset`, `Region`, channel config | ✅ Complete |
 | `lora_mesh.rs` | `LoRaMesh`, `LoRaMeshPhy` - LoRa waveform with mesh integration | ✅ Complete |
+| `crypto.rs` | AES-256-CTR encryption, channel keys, MIC (Message Integrity Code) | ✅ Complete |
+| `telemetry.rs` | Device, environment, and power metrics | ✅ Complete |
+| `wire/` | 16-byte Meshtastic wire header format (little-endian) | ✅ Complete |
+
+### Meshtastic Interoperability (Phase 2)
+
+The mesh module now includes protocol enhancements for real Meshtastic network interoperability:
+
+**Crypto Module (`crypto.rs`)** - Enable with `--features crypto`
+- AES-256-CTR encryption compatible with Meshtastic devices
+- Channel key derivation from channel name + PSK
+- HMAC-SHA256 Message Integrity Code (MIC)
+- `PacketCrypto` trait for encrypt/decrypt on `MeshPacket`
+
+**Telemetry Module (`telemetry.rs`)**
+- `DeviceMetrics`: Battery, voltage, channel utilization, uptime
+- `EnvironmentMetrics`: Temperature, humidity, pressure, IAQ
+- `PowerMetrics`: Multi-channel voltage/current measurements
+- Heat index calculation, configurable update intervals
+
+**Wire Format (`wire/`)**
+- 16-byte header format matching Meshtastic protocol (little-endian)
+- Bidirectional conversion with internal `PacketHeader` format
+- 32-bit packet ID, channel hash, next_hop/relay fields
 
 ### Completed Requirements
 - MESH-002: LoRa symbol encoding (via `LoRaMeshPhy` integrating existing LoRa waveform)
@@ -1694,13 +1718,16 @@ The mesh networking module is now implemented in `crates/r4w-core/src/mesh/`:
 - MESH-009: Next-hop routing
 - MESH-010: Duplicate packet detection
 - MESH-011: Node discovery and neighbor table
+- MESH-012: AES-256-CTR encryption ✅ NEW
+- MESH-013: Wire format header ✅ NEW
 - MESH-017: MeshNetwork trait implementation
+- Bug fixes: RNG in mac.rs/routing.rs, contention window scaling, packet serialization
 
 ### Remaining Work
-- MESH-012, MESH-013: Protobuf and AES encryption for full Meshtastic interoperability
-- MESH-015, MESH-016: Application layer (text messaging, position sharing)
-- MESH-018: SX126x hardware integration
-- MESH-019: Multi-node simulation framework
+- Protobuf payload encoding (requires `prost` integration)
+- Application layer (text messaging, position sharing)
+- SX126x hardware integration
+- Multi-node simulation framework
 
 See `requirements.yaml` for complete requirement details.
 

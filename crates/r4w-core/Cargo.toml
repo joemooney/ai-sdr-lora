@@ -19,6 +19,10 @@ fpga-lattice = ["fpga", "r4w-fpga/lattice"]
 fpga-full = ["fpga", "r4w-fpga/full"]
 # Enable dynamic plugin loading
 plugins = ["dep:libloading"]
+# Enable Meshtastic crypto (AES-256-CTR encryption)
+crypto = ["dep:aes", "dep:ctr", "dep:sha2", "dep:hmac"]
+# Full Meshtastic interoperability (crypto + wire format)
+meshtastic-interop = ["crypto"]
 
 [dependencies]
 rustfft = { workspace = true }
@@ -50,6 +54,12 @@ r4w-fpga = { path = "../r4w-fpga", optional = true }
 
 # Optional: Dynamic plugin loading
 libloading = { version = "0.8", optional = true }
+
+# Optional: Meshtastic crypto (AES-256-CTR)
+aes = { version = "0.8", optional = true }
+ctr = { version = "0.9", optional = true }
+sha2 = { version = "0.10", optional = true }
+hmac = { version = "0.12", optional = true }
 
 [dev-dependencies]
 approx = { workspace = true }

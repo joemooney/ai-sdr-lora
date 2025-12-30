@@ -78,6 +78,9 @@ pub mod neighbor;
 pub mod mac;
 pub mod meshtastic;
 pub mod lora_mesh;
+pub mod crypto;
+pub mod telemetry;
+pub mod wire;
 
 // Re-export main types
 pub use traits::{MeshNetwork, MeshPhy, MeshError, MeshResult, MeshStats, MeshConfig};
@@ -87,3 +90,9 @@ pub use neighbor::{Neighbor, NeighborTable, NodeInfo};
 pub use mac::{MacLayer, CsmaConfig, ChannelState};
 pub use meshtastic::{MeshtasticNode, MeshtasticConfig, ModemPreset, Region, ChannelConfig};
 pub use lora_mesh::{LoRaMesh, LoRaMeshPhy, LoRaMeshConfig};
+pub use crypto::{ChannelKey, CryptoContext, CryptoError, CryptoResult, PacketCrypto, DEFAULT_PSK};
+pub use telemetry::{
+    DeviceMetrics, EnvironmentMetrics, PowerChannel, PowerMetrics,
+    Telemetry, TelemetryConfig, TelemetryVariant,
+};
+pub use wire::{WireHeader, WireFlags, WIRE_HEADER_SIZE};

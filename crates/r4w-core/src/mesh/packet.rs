@@ -220,8 +220,12 @@ pub struct PacketHeader {
 }
 
 impl PacketHeader {
-    /// Header size in bytes
+    /// Header size in bytes (dest:4 + src:4 + packet_id:2 + hop_limit:1 + flags:1 = 12)
+    /// Note: channel field is NOT serialized in wire format
     pub const SIZE: usize = 12;
+
+    /// Minimum header size for parsing (without hop_limit and flags)
+    pub const MIN_SIZE: usize = 10;
 
     /// Create a new header for a broadcast packet
     pub fn broadcast(source: NodeId, hop_limit: u8) -> Self {
@@ -278,7 +282,7 @@ impl PacketHeader {
 
     /// Deserialize header from bytes
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() < 10 {
+        if bytes.len() < Self::MIN_SIZE {
             return None;
         }
         Some(Self {
@@ -289,6 +293,11 @@ impl PacketHeader {
             flags: PacketFlags::from_byte(if bytes.len() > 11 { bytes[11] } else { 0 }),
             channel: 0,
         })
+    }
+
+    /// Get the actual serialized size (always SIZE bytes)
+    pub fn serialized_size(&self) -> usize {
+        Self::SIZE
     }
 }
 
@@ -471,15 +480,19 @@ impl MeshPacket {
 
     /// Deserialize a packet from bytes
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() < PacketHeader::SIZE + 1 {
+        // Minimum: header (12) + packet_type (1) = 13 bytes
+        let header_size = PacketHeader::SIZE;
+        let min_packet_size = header_size + 1; // header + packet_type
+
+        if bytes.len() < min_packet_size {
             return None;
         }
 
         let header = PacketHeader::from_bytes(bytes)?;
-        let packet_type = PacketType::from_byte(bytes[PacketHeader::SIZE - 2]); // Adjust offset
+        let packet_type = PacketType::from_byte(bytes[header_size]); // packet_type is right after header
 
         // Calculate payload boundaries
-        let payload_start = 12; // After minimal header + type byte
+        let payload_start = header_size + 1; // After header + packet_type byte
         let has_mic = header.flags.encrypted();
         let payload_end = if has_mic && bytes.len() >= payload_start + 4 {
             bytes.len() - 4
@@ -621,5 +634,45 @@ mod tests {
         let data = b"123456789";
         let crc = crc16_ccitt(data);
         assert_eq!(crc, 0x29B1); // Known CRC-16-CCITT result
+    }
+
+    #[test]
+    fn test_header_size_consistency() {
+        let source = NodeId::from_bytes([0x11, 0x22, 0x33, 0x44]);
+        let header = PacketHeader::broadcast(source, 3);
+        let bytes = header.to_bytes();
+        // Verify SIZE constant matches actual serialization
+        assert_eq!(bytes.len(), PacketHeader::SIZE);
+    }
+
+    #[test]
+    fn test_mesh_packet_roundtrip() {
+        let source = NodeId::from_bytes([0x11, 0x22, 0x33, 0x44]);
+        let mut packet = MeshPacket::broadcast(source, b"Test payload roundtrip", 3);
+        packet.packet_type = PacketType::Text;
+
+        let bytes = packet.to_bytes();
+        let recovered = MeshPacket::from_bytes(&bytes).expect("Failed to parse packet");
+
+        assert_eq!(recovered.header.source, source);
+        assert_eq!(recovered.header.hop_limit, 3);
+        assert!(recovered.header.destination.is_broadcast());
+        assert_eq!(recovered.packet_type, PacketType::Text);
+        assert_eq!(recovered.payload, b"Test payload roundtrip");
+    }
+
+    #[test]
+    fn test_mesh_packet_with_mic() {
+        let source = NodeId::from_bytes([0x11, 0x22, 0x33, 0x44]);
+        let mut packet = MeshPacket::broadcast(source, b"Encrypted", 3);
+        packet.header.flags.set_encrypted(true);
+        packet.mic = Some([0xDE, 0xAD, 0xBE, 0xEF]);
+
+        let bytes = packet.to_bytes();
+        let recovered = MeshPacket::from_bytes(&bytes).expect("Failed to parse packet");
+
+        assert!(recovered.header.flags.encrypted());
+        assert_eq!(recovered.mic, Some([0xDE, 0xAD, 0xBE, 0xEF]));
+        assert_eq!(recovered.payload, b"Encrypted");
     }
 }

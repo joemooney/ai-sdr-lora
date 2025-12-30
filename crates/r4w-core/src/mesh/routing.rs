@@ -15,6 +15,38 @@ use super::packet::{MeshPacket, NodeId};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::{Duration, Instant};
 
+/// Simple pseudo-random number generator for routing delays.
+/// Uses a Linear Congruential Generator (LCG) with state seeded from system time.
+#[derive(Debug)]
+struct SimpleRng {
+    state: u64,
+}
+
+impl SimpleRng {
+    /// Create a new RNG seeded from system time
+    fn new() -> Self {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default();
+        let seed = now.as_secs().wrapping_mul(1_000_000_000) ^ now.subsec_nanos() as u64;
+        Self { state: seed | 1 }
+    }
+
+    /// Generate next random u64
+    fn next_u64(&mut self) -> u64 {
+        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        self.state
+    }
+
+    /// Generate random u64 in range [0, max)
+    fn next_u64_max(&mut self, max: u64) -> u64 {
+        if max == 0 {
+            return 0;
+        }
+        self.next_u64() % max
+    }
+}
+
 /// A route to a destination node
 #[derive(Debug, Clone)]
 pub struct Route {
@@ -302,6 +334,8 @@ pub struct FloodRouter {
     default_hop_limit: u8,
     /// Base delay for rebroadcast (milliseconds)
     base_delay_ms: u64,
+    /// Random number generator for delay jitter
+    rng: SimpleRng,
 }
 
 impl FloodRouter {
@@ -314,18 +348,19 @@ impl FloodRouter {
             heard_rebroadcast: HashSet::new(),
             default_hop_limit: 3,
             base_delay_ms: 200,
+            rng: SimpleRng::new(),
         }
     }
 
     /// Calculate rebroadcast delay based on SNR
     /// Lower SNR (distant node) = shorter delay = flood first
-    fn rebroadcast_delay(&self, snr: f32) -> Duration {
+    fn rebroadcast_delay(&mut self, snr: f32) -> Duration {
         // SNR typically ranges from -20 to +30 dB
         // Map to 0-1 range (inverted: low SNR = low value = short delay)
         let snr_factor = ((snr + 20.0) / 50.0).clamp(0.0, 1.0);
 
         // Random component (0-100ms) + SNR-based component (0-base_delay)
-        let random_ms = (Instant::now().elapsed().as_nanos() % 100) as u64;
+        let random_ms = self.rng.next_u64_max(100);
         let snr_ms = (snr_factor * self.base_delay_ms as f32) as u64;
 
         Duration::from_millis(random_ms + snr_ms)
