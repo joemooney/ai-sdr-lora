@@ -27,6 +27,12 @@ use super::crypto::{ChannelKey, CryptoContext};
 use super::mac::{CsmaConfig, MacLayer, TransmitDecision};
 use super::neighbor::{Neighbor, NeighborTable, NodeInfo};
 use super::packet::{MeshPacket, NodeId, PacketType};
+#[cfg(feature = "meshtastic-interop")]
+use super::proto::{Data, PortNum, Position as ProtoPosition, User as ProtoUser};
+#[cfg(feature = "meshtastic-interop")]
+use super::proto::{DeviceMetrics as ProtoDeviceMetrics, Telemetry as ProtoTelemetry, TelemetryVariant as ProtoTelemetryVariant};
+#[cfg(feature = "meshtastic-interop")]
+use prost::Message;
 use super::routing::{FloodRouter, NextHopRouter, Route};
 use super::telemetry::{DeviceMetrics, EnvironmentMetrics, Telemetry, TelemetryConfig, TelemetryVariant};
 use super::traits::{MeshError, MeshNetwork, MeshResult, MeshStats};
@@ -575,7 +581,23 @@ impl MeshtasticNode {
 
         // Convert wire header to internal format and create packet
         let header = wire_header.to_packet_header();
-        let packet = MeshPacket::from_parts(header, payload);
+
+        // Decode protobuf Data envelope if meshtastic-interop is enabled
+        #[cfg(feature = "meshtastic-interop")]
+        let (packet_type, inner_payload) = self.decode_proto_payload(&payload);
+
+        #[cfg(not(feature = "meshtastic-interop"))]
+        let (packet_type, inner_payload) = (PacketType::Text, payload);
+
+        let packet = MeshPacket {
+            header,
+            packet_type,
+            payload: inner_payload,
+            mic: None,
+            rx_rssi: None,
+            rx_snr: None,
+            rx_time: None,
+        };
 
         // Process through normal receive path
         self.on_receive(packet, rssi, snr)
@@ -620,6 +642,43 @@ impl MeshtasticNode {
         Some(payload_and_mic.to_vec())
     }
 
+    // ========================================================================
+    // Protobuf RX decoding (meshtastic-interop feature)
+    // ========================================================================
+
+    /// Decode protobuf Data message and return (packet_type, inner_payload)
+    ///
+    /// If decoding fails, returns the original payload as Text type.
+    #[cfg(feature = "meshtastic-interop")]
+    fn decode_proto_payload(&self, payload: &[u8]) -> (PacketType, Vec<u8>) {
+        match Data::decode(payload) {
+            Ok(data) => {
+                let packet_type = self.portnum_to_packet_type(PortNum::from_u32(data.portnum as u32));
+                // For text messages, return the inner payload bytes directly
+                // For other types, the payload is already the encoded inner message
+                (packet_type, data.payload)
+            }
+            Err(_) => {
+                // Not a valid protobuf message, treat as raw text
+                (PacketType::Text, payload.to_vec())
+            }
+        }
+    }
+
+    /// Convert PortNum to PacketType
+    #[cfg(feature = "meshtastic-interop")]
+    fn portnum_to_packet_type(&self, portnum: PortNum) -> PacketType {
+        match portnum {
+            PortNum::Text | PortNum::TextMessageCompressed => PacketType::Text,
+            PortNum::Position => PacketType::Position,
+            PortNum::NodeInfo => PacketType::NodeInfo,
+            PortNum::Routing => PacketType::Routing,
+            PortNum::Telemetry => PacketType::Telemetry,
+            PortNum::Admin => PacketType::Admin,
+            _ => PacketType::Custom,
+        }
+    }
+
     /// Broadcast node info
     fn broadcast_node_info(&mut self) {
         let packet = MeshPacket::node_info(
@@ -653,6 +712,93 @@ impl MeshtasticNode {
         let packet = MeshPacket::telemetry(self.node_id, &telemetry);
         let _ = self.queue_packet(&packet);
         self.last_telemetry_broadcast = Some(Instant::now());
+    }
+
+    // ========================================================================
+    // Protobuf-enabled TX methods (meshtastic-interop feature)
+    // ========================================================================
+
+    /// Send a text message using Meshtastic protobuf encoding
+    ///
+    /// The message is wrapped in a proto::Data message with PortNum::Text.
+    #[cfg(feature = "meshtastic-interop")]
+    pub fn send_text(&mut self, message: &str, hop_limit: u8) -> MeshResult<()> {
+        let data = Data::text(message);
+        let payload = data.encode_to_vec();
+        self.send_proto_packet(payload, PacketType::Text, hop_limit, None)
+    }
+
+    /// Send a text message to a specific node using Meshtastic protobuf encoding
+    #[cfg(feature = "meshtastic-interop")]
+    pub fn send_text_to(&mut self, message: &str, destination: NodeId) -> MeshResult<()> {
+        let data = Data::text(message);
+        let payload = data.encode_to_vec();
+        self.send_proto_packet(payload, PacketType::Text, 3, Some(destination))
+    }
+
+    /// Send position using Meshtastic protobuf encoding
+    #[cfg(feature = "meshtastic-interop")]
+    pub fn send_position(&mut self, lat: f64, lon: f64, alt: i32) -> MeshResult<()> {
+        let pos = ProtoPosition::from_coords(lat, lon, alt);
+        let data = Data::position(pos);
+        let payload = data.encode_to_vec();
+        self.send_proto_packet(payload, PacketType::Position, 3, None)
+    }
+
+    /// Send node info (User message) using Meshtastic protobuf encoding
+    #[cfg(feature = "meshtastic-interop")]
+    pub fn send_node_info(&mut self) -> MeshResult<()> {
+        let user = ProtoUser::new(
+            &format!("!{:08x}", self.node_id.to_u32()),
+            &self.node_info.short_name,
+            &self.node_info.long_name,
+        );
+        let data = Data::user(user);
+        let payload = data.encode_to_vec();
+        self.send_proto_packet(payload, PacketType::NodeInfo, 3, None)
+    }
+
+    /// Send telemetry using Meshtastic protobuf encoding
+    #[cfg(feature = "meshtastic-interop")]
+    pub fn send_telemetry_proto(&mut self) -> MeshResult<()> {
+        self.update_device_metrics();
+
+        let dm = ProtoDeviceMetrics::from_internal(&self.device_metrics);
+        let telemetry = ProtoTelemetry {
+            time: self.start_time.elapsed().as_secs() as u32,
+            variant: Some(ProtoTelemetryVariant::DeviceMetrics(dm)),
+        };
+        let data = Data::telemetry(telemetry);
+        let payload = data.encode_to_vec();
+        self.send_proto_packet(payload, PacketType::Telemetry, 3, None)
+    }
+
+    /// Internal helper to send a protobuf-encoded packet
+    #[cfg(feature = "meshtastic-interop")]
+    fn send_proto_packet(
+        &mut self,
+        payload: Vec<u8>,
+        packet_type: PacketType,
+        hop_limit: u8,
+        destination: Option<NodeId>,
+    ) -> MeshResult<()> {
+        let header = if let Some(dest) = destination {
+            super::packet::PacketHeader::direct(self.node_id, dest)
+        } else {
+            super::packet::PacketHeader::broadcast(self.node_id, hop_limit)
+        };
+
+        let packet = MeshPacket {
+            header,
+            packet_type,
+            payload,
+            mic: None,
+            rx_rssi: None,
+            rx_snr: None,
+            rx_time: None,
+        };
+
+        self.queue_packet(&packet)
     }
 }
 
@@ -1053,5 +1199,172 @@ mod tests {
 
         // Decrypted payload should match original
         assert_eq!(delivered[0].payload, payload);
+    }
+
+    // ========================================================================
+    // Protobuf integration tests (meshtastic-interop feature)
+    // ========================================================================
+
+    #[cfg(feature = "meshtastic-interop")]
+    #[test]
+    fn test_protobuf_text_roundtrip() {
+        let config = MeshtasticConfig::default();
+        let mut sender = MeshtasticNode::new(config.clone());
+        let mut receiver = MeshtasticNode::new(config);
+
+        let message = "Hello Meshtastic protobuf!";
+
+        // Send text using protobuf encoding
+        sender.send_text(message, 3).unwrap();
+
+        // Wait for DIFS period
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        // Get wire bytes
+        let wire_bytes = sender.process_tx(false).expect("should have packet");
+
+        // Receiver processes wire format
+        let delivered = receiver.receive_bytes(&wire_bytes, -70.0, 15.0);
+
+        assert_eq!(delivered.len(), 1);
+        assert_eq!(delivered[0].packet_type, PacketType::Text);
+
+        // Payload should be the raw text bytes (extracted from proto::Data)
+        assert_eq!(String::from_utf8_lossy(&delivered[0].payload), message);
+    }
+
+    #[cfg(feature = "meshtastic-interop")]
+    #[test]
+    fn test_protobuf_position_roundtrip() {
+        use crate::mesh::proto::Position as ProtoPosition;
+        use prost::Message;
+
+        let config = MeshtasticConfig::default();
+        let mut sender = MeshtasticNode::new(config.clone());
+        let mut receiver = MeshtasticNode::new(config);
+
+        let lat = 37.422;
+        let lon = -122.084;
+        let alt = 10;
+
+        // Send position using protobuf encoding
+        sender.send_position(lat, lon, alt).unwrap();
+
+        // Wait for DIFS period
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        let wire_bytes = sender.process_tx(false).expect("should have packet");
+        let delivered = receiver.receive_bytes(&wire_bytes, -70.0, 15.0);
+
+        assert_eq!(delivered.len(), 1);
+        assert_eq!(delivered[0].packet_type, PacketType::Position);
+
+        // Decode inner position from payload
+        let pos = ProtoPosition::decode(delivered[0].payload.as_slice()).unwrap();
+        assert!((pos.latitude() - lat).abs() < 0.0001);
+        assert!((pos.longitude() - lon).abs() < 0.0001);
+        assert_eq!(pos.altitude, alt);
+    }
+
+    #[cfg(feature = "meshtastic-interop")]
+    #[test]
+    fn test_protobuf_telemetry_roundtrip() {
+        use crate::mesh::proto::{Telemetry as ProtoTelemetry, TelemetryVariant as ProtoTelemetryVariant};
+        use prost::Message;
+
+        let config = MeshtasticConfig::default();
+        let mut sender = MeshtasticNode::new(config.clone());
+        let mut receiver = MeshtasticNode::new(config);
+
+        // Set some metrics
+        sender.set_battery_level(85);
+        sender.set_voltage(4.1);
+
+        // Send telemetry using protobuf encoding
+        sender.send_telemetry_proto().unwrap();
+
+        // Wait for DIFS period
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        let wire_bytes = sender.process_tx(false).expect("should have packet");
+        let delivered = receiver.receive_bytes(&wire_bytes, -70.0, 15.0);
+
+        assert_eq!(delivered.len(), 1);
+        assert_eq!(delivered[0].packet_type, PacketType::Telemetry);
+
+        // Decode inner telemetry from payload
+        let telemetry = ProtoTelemetry::decode(delivered[0].payload.as_slice()).unwrap();
+        if let Some(ProtoTelemetryVariant::DeviceMetrics(dm)) = telemetry.variant {
+            assert_eq!(dm.battery_level, 85);
+            assert!((dm.voltage - 4.1).abs() < 0.01);
+        } else {
+            panic!("Expected DeviceMetrics variant");
+        }
+    }
+
+    #[cfg(feature = "meshtastic-interop")]
+    #[test]
+    fn test_protobuf_node_info_roundtrip() {
+        use crate::mesh::proto::User as ProtoUser;
+        use prost::Message;
+
+        let mut config = MeshtasticConfig::default();
+        config.short_name = "TEST".to_string();
+        config.long_name = "Test Proto Node".to_string();
+
+        let mut sender = MeshtasticNode::new(config.clone());
+        let mut receiver = MeshtasticNode::new(MeshtasticConfig::default());
+
+        // Send node info using protobuf encoding
+        sender.send_node_info().unwrap();
+
+        // Wait for DIFS period
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        let wire_bytes = sender.process_tx(false).expect("should have packet");
+        let delivered = receiver.receive_bytes(&wire_bytes, -70.0, 15.0);
+
+        assert_eq!(delivered.len(), 1);
+        assert_eq!(delivered[0].packet_type, PacketType::NodeInfo);
+
+        // Decode inner user from payload
+        let user = ProtoUser::decode(delivered[0].payload.as_slice()).unwrap();
+        assert_eq!(user.short_name, "TEST");
+        assert_eq!(user.long_name, "Test Proto Node");
+    }
+
+    #[cfg(all(feature = "meshtastic-interop", feature = "crypto"))]
+    #[test]
+    fn test_protobuf_encrypted_roundtrip() {
+        use crate::mesh::crypto::DEFAULT_PSK;
+
+        // Create encrypted channel configuration
+        let mut config = MeshtasticConfig::default();
+        config.encryption_enabled = true;
+        let mut psk = [0u8; 32];
+        psk[..DEFAULT_PSK.len()].copy_from_slice(DEFAULT_PSK);
+        config.primary_channel = ChannelConfig::with_psk("Encrypted", psk, ModemPreset::LongFast);
+
+        let mut sender = MeshtasticNode::new(config.clone());
+        let mut receiver = MeshtasticNode::new(config);
+
+        let message = "Secret protobuf message!";
+
+        // Send text using protobuf encoding (will be encrypted)
+        sender.send_text(message, 3).unwrap();
+
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        let wire_bytes = sender.process_tx(false).expect("should have packet");
+
+        // Verify it's encrypted (has MIC)
+        assert!(wire_bytes.len() > WIRE_HEADER_SIZE + message.len() + 4);
+
+        // Receiver decrypts and decodes protobuf
+        let delivered = receiver.receive_bytes(&wire_bytes, -70.0, 15.0);
+
+        assert_eq!(delivered.len(), 1);
+        assert_eq!(delivered[0].packet_type, PacketType::Text);
+        assert_eq!(String::from_utf8_lossy(&delivered[0].payload), message);
     }
 }
