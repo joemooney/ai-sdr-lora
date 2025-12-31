@@ -621,4 +621,275 @@ mod tests {
         assert!(hop.is_some());
         assert_eq!(hop.unwrap().node_id, via);
     }
+
+    // ========== Property-Based Tests ==========
+
+    use rand::Rng;
+
+    /// Property: Routing table never exceeds capacity
+    #[test]
+    fn prop_routing_table_capacity() {
+        let max_routes = 50;
+        let mut table = RoutingTable::new(3600, max_routes);
+        let mut rng = rand::thread_rng();
+
+        // Add more routes than capacity
+        for i in 0..200 {
+            let dest = NodeId::from_u32(rng.gen());
+            let hop_count = rng.gen_range(1..8);
+            let quality = rng.gen::<f32>();
+            table.update(Route::via(dest, NodeId::random(), hop_count, quality));
+
+            // Invariant: never exceeds max
+            assert!(
+                table.len() <= max_routes,
+                "Table exceeded capacity: {} > {} after {} insertions",
+                table.len(),
+                max_routes,
+                i + 1
+            );
+        }
+    }
+
+    /// Property: Duplicate cache always detects duplicates
+    #[test]
+    fn prop_duplicate_detection() {
+        let mut cache = DuplicateCache::new(300, 1000);
+        let mut rng = rand::thread_rng();
+
+        let mut seen: Vec<(NodeId, u16)> = Vec::new();
+
+        for _ in 0..500 {
+            let source = NodeId::from_u32(rng.gen());
+            let packet_id: u16 = rng.gen();
+
+            // First check - should be new
+            let is_new = cache.check_and_add(source, packet_id);
+            assert!(is_new, "First occurrence should be new");
+
+            seen.push((source, packet_id));
+
+            // Immediately re-check - should be duplicate
+            let is_dup = !cache.check_and_add(source, packet_id);
+            assert!(is_dup, "Immediate re-check should be duplicate");
+        }
+
+        // All seen packets should still be detected as duplicates
+        for (source, packet_id) in &seen {
+            assert!(
+                cache.is_duplicate(*source, *packet_id),
+                "Previously seen packet not detected as duplicate"
+            );
+        }
+    }
+
+    /// Property: Better routes always win over worse routes
+    #[test]
+    fn prop_better_routes_win() {
+        let mut table = RoutingTable::new(3600, 100);
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..100 {
+            let dest = NodeId::from_u32(rng.gen());
+
+            // Insert a "bad" route (high hop count, low quality)
+            let bad_route = Route::via(dest, NodeId::random(), 5, 0.2);
+            table.update(bad_route);
+
+            // Insert a "good" route (low hop count, high quality)
+            let good_route = Route::via(dest, NodeId::random(), 1, 0.95);
+            table.update(good_route.clone());
+
+            // Good route should win
+            let stored = table.get(&dest).expect("Route should exist");
+            assert_eq!(
+                stored.hop_count, 1,
+                "Better route (fewer hops) should win"
+            );
+            assert!(
+                stored.quality > 0.9,
+                "Better route (higher quality) should win"
+            );
+        }
+    }
+
+    /// Property: Route quality comparison is transitive
+    #[test]
+    fn prop_route_comparison_transitive() {
+        let dest = NodeId::from_u32(12345);
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..50 {
+            let mut table = RoutingTable::new(3600, 10);
+
+            // Generate three routes with different qualities
+            let mut routes: Vec<(u8, f32)> = (0..3)
+                .map(|_| {
+                    let hop: u8 = rng.gen_range(1..8);
+                    let quality: f32 = rng.gen_range(0.1..1.0);
+                    (hop, quality)
+                })
+                .collect();
+
+            // Sort by our expected ordering (fewer hops first, then higher quality)
+            routes.sort_by(|a, b| {
+                a.0.cmp(&b.0)
+                    .then(b.1.partial_cmp(&a.1).unwrap())
+            });
+
+            // Insert in random order
+            let insert_order: Vec<usize> = {
+                let mut v: Vec<usize> = (0..3).collect();
+                for i in (1..3).rev() {
+                    let j = rng.gen_range(0..=i);
+                    v.swap(i, j);
+                }
+                v
+            };
+
+            for i in insert_order {
+                let (hops, quality) = routes[i];
+                table.update(Route::via(dest, NodeId::random(), hops, quality));
+            }
+
+            // Best route should win regardless of insertion order
+            let stored = table.get(&dest).expect("Route should exist");
+            assert_eq!(
+                stored.hop_count, routes[0].0,
+                "Best route (fewest hops) should win"
+            );
+        }
+    }
+
+    /// Property: Flood router never processes same packet twice
+    #[test]
+    fn prop_flood_no_duplicate_processing() {
+        let node_id = NodeId::random();
+        let mut router = FloodRouter::new(node_id);
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..100 {
+            let source = NodeId::from_u32(rng.gen());
+            let payload: Vec<u8> = (0..20).map(|_| rng.gen()).collect();
+            let packet = MeshPacket::broadcast(source, &payload, 3);
+
+            // First processing
+            let (local1, _) = router.process_incoming(packet.clone(), -80.0, 10.0);
+            assert!(local1.is_some(), "First packet should be accepted");
+
+            // Second processing of same packet
+            let (local2, _) = router.process_incoming(packet.clone(), -80.0, 10.0);
+            assert!(local2.is_none(), "Duplicate packet should be rejected");
+
+            // Third processing
+            let (local3, _) = router.process_incoming(packet, -80.0, 10.0);
+            assert!(local3.is_none(), "Duplicate packet should still be rejected");
+        }
+    }
+
+    /// Property: Packets destined for us are always delivered locally
+    #[test]
+    fn prop_local_delivery() {
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..50 {
+            let node_id = NodeId::from_u32(rng.gen());
+            let mut router = FloodRouter::new(node_id);
+
+            let source = NodeId::from_u32(rng.gen());
+            let payload: Vec<u8> = (0..30).map(|_| rng.gen()).collect();
+
+            // Packet addressed to us (using broadcast with destination set)
+            let mut packet = MeshPacket::broadcast(source, &payload, 3);
+            packet.header.destination = node_id;
+
+            let (local, forward) = router.process_incoming(packet, -80.0, 10.0);
+
+            assert!(local.is_some(), "Packet addressed to us must be delivered locally");
+            assert!(forward.is_none(), "Packet addressed to us should not be forwarded");
+        }
+    }
+
+    /// Property: Route learning from packets preserves source info
+    #[test]
+    fn prop_route_learning() {
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..50 {
+            let node_id = NodeId::from_u32(rng.gen());
+            let mut router = NextHopRouter::new(node_id);
+
+            let source = NodeId::from_u32(rng.gen());
+            let via = NodeId::from_u32(rng.gen());
+            let hop_start: u8 = rng.gen_range(2..7);
+            let hops_used: u8 = rng.gen_range(1..hop_start);
+
+            let mut packet = MeshPacket::broadcast(source, b"Test", hop_start);
+            packet.header.hop_limit = hop_start - hops_used;
+
+            router.learn_route(&packet, via, 0.9);
+
+            // Should be able to route back to source through via
+            let hop = router.next_hop(source);
+            assert!(hop.is_some(), "Route should be learned");
+            assert_eq!(hop.unwrap().node_id, via, "Route should go through via node");
+        }
+    }
+
+    /// Property: DuplicateCache triggers cleanup when over capacity
+    #[test]
+    fn prop_duplicate_cache_triggers_cleanup() {
+        let max_size = 100;
+        // Very short TTL (0 seconds) so cleanup will always clear everything
+        let mut cache = DuplicateCache::new(0, max_size);
+        let mut rng = rand::thread_rng();
+
+        // Add more entries than max_size
+        for _ in 0..200 {
+            let source = NodeId::from_u32(rng.gen());
+            let packet_id: u16 = rng.gen();
+            cache.check_and_add(source, packet_id);
+        }
+
+        // With TTL=0, cleanup should have removed expired entries
+        // The cache should stay manageable (not grow unbounded)
+        // Note: actual size depends on when cleanup was triggered
+        cache.cleanup();
+
+        // After explicit cleanup with TTL=0, cache should be empty
+        // (all entries expired immediately)
+        assert!(
+            cache.seen.is_empty(),
+            "With TTL=0, cache should be empty after cleanup, but has {} entries",
+            cache.seen.len()
+        );
+    }
+
+    /// Property: DuplicateCache correctly identifies unique vs duplicate packets
+    #[test]
+    fn prop_duplicate_cache_uniqueness() {
+        let mut cache = DuplicateCache::new(300, 1000);
+        let mut rng = rand::thread_rng();
+
+        // Track what we've seen
+        let mut seen_keys: std::collections::HashSet<(NodeId, u16)> = std::collections::HashSet::new();
+
+        for _ in 0..200 {
+            let source = NodeId::from_u32(rng.gen());
+            let packet_id: u16 = rng.gen();
+            let key = (source, packet_id);
+
+            let is_new = cache.check_and_add(source, packet_id);
+
+            if seen_keys.contains(&key) {
+                // We've seen this key before in this test
+                // (due to random collision)
+                assert!(!is_new, "Repeated key should be detected as duplicate");
+            } else {
+                // First time seeing this key
+                assert!(is_new, "New key should not be detected as duplicate");
+                seen_keys.insert(key);
+            }
+        }
+    }
 }
