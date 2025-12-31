@@ -977,4 +977,81 @@ mod tests {
         let delivered = node.receive_bytes(&short_bytes, -75.0, 12.0);
         assert!(delivered.is_empty());
     }
+
+    #[test]
+    fn test_wire_format_roundtrip() {
+        // Create two nodes with same channel configuration
+        let config = MeshtasticConfig::default();
+        let mut sender = MeshtasticNode::new(config.clone());
+        let mut receiver = MeshtasticNode::new(config);
+
+        let payload = b"Hello roundtrip test!";
+
+        // Sender broadcasts a message (goes through queue_packet with wire format)
+        sender.broadcast(payload, 3).unwrap();
+
+        // Wait for DIFS period (50ms) before MAC allows transmission
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        // Extract the wire format bytes from sender's TX queue
+        let wire_bytes = sender.process_tx(false).expect("should have packet to send");
+
+        // Verify wire format structure: 16-byte header + payload
+        assert!(wire_bytes.len() >= WIRE_HEADER_SIZE + payload.len());
+
+        // Receiver processes the wire format bytes
+        let delivered = receiver.receive_bytes(&wire_bytes, -70.0, 15.0);
+
+        // Should receive exactly one packet
+        assert_eq!(delivered.len(), 1);
+
+        // Payload should match
+        assert_eq!(delivered[0].payload, payload);
+
+        // Source should be sender's node ID
+        assert_eq!(delivered[0].header.source, sender.node_id());
+    }
+
+    #[cfg(feature = "crypto")]
+    #[test]
+    fn test_wire_format_roundtrip_encrypted() {
+        use crate::mesh::crypto::DEFAULT_PSK;
+
+        // Create encrypted channel configuration
+        let mut config = MeshtasticConfig::default();
+        config.encryption_enabled = true;
+        let mut psk = [0u8; 32];
+        psk[..DEFAULT_PSK.len()].copy_from_slice(DEFAULT_PSK);
+        config.primary_channel = ChannelConfig::with_psk("Encrypted", psk, ModemPreset::LongFast);
+
+        let mut sender = MeshtasticNode::new(config.clone());
+        let mut receiver = MeshtasticNode::new(config);
+
+        let payload = b"Secret message!";
+
+        // Sender broadcasts encrypted message
+        sender.broadcast(payload, 3).unwrap();
+
+        // Wait for DIFS period (50ms) before MAC allows transmission
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        // Extract wire format (header + ciphertext + MIC)
+        let wire_bytes = sender.process_tx(false).expect("should have packet to send");
+
+        // Wire format should be larger due to 4-byte MIC
+        assert!(wire_bytes.len() >= WIRE_HEADER_SIZE + payload.len() + 4);
+
+        // Verify ciphertext is different from plaintext
+        let ciphertext = &wire_bytes[WIRE_HEADER_SIZE..wire_bytes.len() - 4];
+        assert_ne!(ciphertext, payload);
+
+        // Receiver decrypts and processes
+        let delivered = receiver.receive_bytes(&wire_bytes, -70.0, 15.0);
+
+        // Should receive exactly one packet
+        assert_eq!(delivered.len(), 1);
+
+        // Decrypted payload should match original
+        assert_eq!(delivered[0].payload, payload);
+    }
 }
