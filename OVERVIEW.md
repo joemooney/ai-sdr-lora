@@ -1685,6 +1685,7 @@ The mesh networking module is now implemented in `crates/r4w-core/src/mesh/`:
 | `crypto.rs` | AES-256-CTR encryption, channel keys, MIC (Message Integrity Code) | ✅ Complete |
 | `telemetry.rs` | Device, environment, and power metrics | ✅ Complete |
 | `wire/` | 16-byte Meshtastic wire header format (little-endian) | ✅ Complete |
+| `proto/` | Prost protobuf message encoding (Data, Position, User, Telemetry) | ✅ Complete |
 
 ### Meshtastic Interoperability (Phase 2)
 
@@ -1707,6 +1708,31 @@ The mesh module now includes protocol enhancements for real Meshtastic network i
 - Bidirectional conversion with internal `PacketHeader` format
 - 32-bit packet ID, channel hash, next_hop/relay fields
 
+**Protobuf Encoding (`proto/`)** - Enable with `--features meshtastic-interop`
+- Prost-based protobuf message types (no build.rs needed)
+- `Data`: Wrapper envelope with portnum and payload bytes
+- `Position`: GPS coordinates (lat/lon as i32 × 1e7)
+- `User`: Node info (id, short_name, long_name)
+- `Telemetry`: Device/environment metrics with oneof variant
+- `PortNum`: Application port enum (Text, Position, Telemetry, etc.)
+
+**TX Path Integration:**
+```rust
+// Send protobuf-encoded text message
+node.send_text("Hello Meshtastic!", 3)?;
+
+// Send position with protobuf encoding
+node.send_position(37.422, -122.084, 10)?;
+
+// Send telemetry (device metrics)
+node.send_telemetry_proto()?;
+```
+
+**RX Path Integration:**
+- Automatic protobuf `Data` envelope decoding
+- `packet_type` set from `PortNum` in received message
+- Inner payload extracted for application layer
+
 ### Completed Requirements
 - MESH-002: LoRa symbol encoding (via `LoRaMeshPhy` integrating existing LoRa waveform)
 - MESH-003: Channel Activity Detection (CAD) via signal power estimation
@@ -1718,16 +1744,17 @@ The mesh module now includes protocol enhancements for real Meshtastic network i
 - MESH-009: Next-hop routing
 - MESH-010: Duplicate packet detection
 - MESH-011: Node discovery and neighbor table
-- MESH-012: AES-256-CTR encryption ✅ NEW
-- MESH-013: Wire format header ✅ NEW
+- MESH-012: AES-256-CTR encryption ✅
+- MESH-013: Wire format header ✅
+- MESH-014: Protobuf payload encoding ✅ NEW
 - MESH-017: MeshNetwork trait implementation
 - Bug fixes: RNG in mac.rs/routing.rs, contention window scaling, packet serialization
 
 ### Remaining Work
-- Protobuf payload encoding (requires `prost` integration)
-- Application layer (text messaging, position sharing)
+- Application layer UI (text messaging, position sharing)
 - SX126x hardware integration
 - Multi-node simulation framework
+- Real device interop testing
 
 See `requirements.yaml` for complete requirement details.
 
