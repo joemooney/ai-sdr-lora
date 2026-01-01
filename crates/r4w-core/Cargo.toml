@@ -9,6 +9,8 @@ license.workspace = true
 default = []
 # Enable parallel processing with rayon
 parallel = ["dep:rayon", "dep:rand", "dep:rand_distr"]
+# Enable PNG image generation for waterfall/spectrum
+image = ["dep:image"]
 # Enable FPGA hardware acceleration
 fpga = ["dep:r4w-fpga"]
 # Enable FPGA with Zynq support
@@ -63,6 +65,9 @@ hmac = { version = "0.12", optional = true }
 
 # Optional: Meshtastic protobuf encoding
 prost = { version = "0.13", optional = true }
+
+# Optional: Image generation for waterfall/spectrum visualization
+image = { version = "0.25", optional = true, default-features = false, features = ["png"] }
 
 [dev-dependencies]
 approx = { workspace = true }

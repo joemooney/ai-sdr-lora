@@ -10,12 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **r4w-core**: Core DSP algorithms, timing, RT primitives, configuration
   - `waveform/`: 38+ waveform implementations
+  - `analysis/`: Spectrum analyzer, waterfall generator, signal statistics, peak detection
   - `timing.rs`: Multi-clock model (SampleClock, WallClock, HardwareClock, SyncedTime)
   - `rt/`: Lock-free ring buffers, buffer pools, RT thread spawning
   - `config.rs`: YAML-based configuration system
 - **r4w-sim**: SDR simulation, HAL traits, channel models
   - `hal/`: StreamHandle, TunerControl, ClockControl, SdrDeviceExt traits
-  - `channel.rs`: AWGN, Rayleigh, Rician, CFO models
+  - `channel.rs`: AWGN, Rayleigh, Rician, CFO, TDL multipath (EPA/EVA/ETU), Jake's Doppler
+  - `doppler.rs`: Jake's/Clarke's, Flat, and Gaussian Doppler models
   - `simulator.rs`: Software SDR simulator
 - **r4w-fpga**: FPGA acceleration (Xilinx Zynq, Lattice iCE40/ECP5)
 - **r4w-sandbox**: Waveform isolation (8 security levels)
@@ -50,6 +52,15 @@ cargo run --bin r4w -- completions bash > ~/.local/share/bash-completion/complet
 # Record/Playback signals (SigMF format)
 cargo run --bin r4w -- record -o test.sigmf --generate tone --duration 5.0
 cargo run --bin r4w -- playback -i test.sigmf --info
+
+# Signal analysis
+cargo run --bin r4w -- analyze spectrum -i file.sigmf-meta --fft-size 1024
+cargo run --bin r4w -- analyze waterfall -i file.sigmf-meta --output waterfall.png
+cargo run --bin r4w -- analyze stats -i file.sigmf-meta --format json
+cargo run --bin r4w -- analyze peaks -i file.sigmf-meta --threshold 10
+
+# Generate gallery images
+cargo run --example gallery_generate -p r4w-sim --features image
 
 # Prometheus metrics
 cargo run --bin r4w -- metrics --format prometheus
@@ -90,6 +101,10 @@ See OVERVIEW.md for the full Waveform Developer's Guide and Porting Guide.
 
 ### Recent Updates
 
+- **Enhanced Channel Simulation** - Jake's/Clarke's Doppler model, Tapped Delay Line (TDL) multipath with 3GPP profiles (EPA, EVA, ETU)
+- **CLI Analysis Tools** - `r4w analyze` subcommands: spectrum, waterfall, stats, peaks
+- **Signal Gallery** - 23 PNG images: constellations, spectra, channel effects (`gallery/`)
+- **Jupyter Notebooks** - 8 interactive tutorials with Python wrapper (`notebooks/`)
 - **Deployment Options** - Docker image, cargo-binstall manifest, GitHub Actions release workflow
 - **CLI Enhancements** - Record/Playback (SigMF), Prometheus metrics, shell completions, waveform comparison
 - **Example Gallery** - Getting-started examples for modulation, channels, LoRa, mesh networking

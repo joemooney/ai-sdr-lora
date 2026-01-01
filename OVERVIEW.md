@@ -444,6 +444,27 @@ Measured with `tokei`:
 
 ## Recent Updates
 
+### December 2024 (Latest)
+
+- **Enhanced Channel Simulation**:
+  - Jake's/Clarke's Doppler model with sum-of-sinusoids implementation
+  - Tapped Delay Line (TDL) multipath with 3GPP profiles (EPA, EVA, ETU)
+  - Velocity-to-Doppler frequency conversion helper
+  - Per-tap Doppler fading for frequency-selective channels
+- **CLI Signal Analysis Tools** (`r4w analyze`):
+  - `spectrum` - FFT-based power spectrum with windowing options
+  - `waterfall` - Spectrogram PNG generation with colormaps (Viridis, Plasma, Turbo)
+  - `stats` - Signal statistics (power, PAPR, DC offset)
+  - `peaks` - Spectral peak detection with configurable threshold
+- **Signal Visualization Gallery** (`gallery/`):
+  - 23 PNG images: constellation diagrams, spectrum plots, waterfall images
+  - Channel effect visualizations: AWGN at various SNRs, fading, multipath
+  - Gallery generator example: `cargo run --example gallery_generate -p r4w-sim --features image`
+- **Jupyter Tutorial Notebooks** (`notebooks/`):
+  - 8 interactive notebooks covering SDR fundamentals
+  - Python wrapper for R4W CLI (`r4w_python` module)
+  - Topics: I/Q basics, modulation, spectrum analysis, channel effects, LoRa, BER simulation, mesh networking
+
 ### December 2024 (Late)
 
 - **Mesh Simulation & Testing Tools Added**:

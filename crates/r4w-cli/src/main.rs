@@ -171,19 +171,71 @@ enum Commands {
         payload_len: usize,
     },
 
-    /// Analyze I/Q samples
+    /// Analyze I/Q samples (spectrum, waterfall, statistics, peaks)
     Analyze {
-        /// Input file with I/Q samples
+        /// Input file with I/Q samples or SigMF metadata
         #[arg(short, long)]
         input: PathBuf,
 
-        /// Input format (f32, f64, i16)
+        /// Input format (f32, f64, i16, sigmf)
         #[arg(long, default_value = "f32")]
         format: String,
+
+        /// Sample rate in Hz (required for frequency calculations)
+        #[arg(long, default_value = "1000000")]
+        sample_rate: f64,
 
         /// Number of samples to analyze (0 = all)
         #[arg(long, default_value = "0")]
         samples: usize,
+
+        /// Analysis mode: basic, spectrum, waterfall, stats, peaks
+        #[arg(long, default_value = "basic")]
+        mode: String,
+
+        /// FFT size for spectrum/waterfall analysis
+        #[arg(long, default_value = "1024")]
+        fft_size: usize,
+
+        /// Number of frames to average (for spectrum)
+        #[arg(long, default_value = "1")]
+        average: usize,
+
+        /// Output format: text, json, csv, ascii
+        #[arg(long, short = 'o', default_value = "text")]
+        output_format: String,
+
+        /// Output file (stdout if not specified)
+        #[arg(long)]
+        output: Option<PathBuf>,
+
+        /// Window function: hann, hamming, blackman, none
+        #[arg(long, default_value = "hann")]
+        window: String,
+
+        /// Minimum dB for waterfall color scale
+        #[arg(long, default_value = "-60")]
+        min_db: f64,
+
+        /// Maximum dB for waterfall color scale
+        #[arg(long, default_value = "0")]
+        max_db: f64,
+
+        /// Colormap for waterfall: viridis, plasma, turbo, grayscale
+        #[arg(long, default_value = "viridis")]
+        colormap: String,
+
+        /// Peak detection threshold in dB above noise floor
+        #[arg(long, default_value = "10")]
+        threshold: f64,
+
+        /// Maximum number of peaks to find
+        #[arg(long, default_value = "10")]
+        max_peaks: usize,
+
+        /// Waterfall height (rows) for PNG output
+        #[arg(long, default_value = "512")]
+        height: usize,
     },
 
     /// Simulate a waveform (AM, FM, OOK, FSK, PSK, QAM)
@@ -1172,81 +1224,227 @@ fn cmd_info(sf: u8, bw: u32, cr: u8, payload_len: usize) -> Result<()> {
     Ok(())
 }
 
-fn cmd_analyze(input: PathBuf, _format: String, max_samples: usize) -> Result<()> {
+/// Arguments for the analyze command
+struct AnalyzeArgs {
+    input: PathBuf,
+    #[allow(dead_code)]
+    format: String,
+    sample_rate: f64,
+    samples: usize,
+    mode: String,
+    fft_size: usize,
+    average: usize,
+    output_format: String,
+    output: Option<PathBuf>,
+    window: String,
+    min_db: f64,
+    max_db: f64,
+    colormap: String,
+    threshold: f64,
+    max_peaks: usize,
+    height: usize,
+}
+
+fn cmd_analyze(args: AnalyzeArgs) -> Result<()> {
+    use r4w_core::analysis::{
+        Colormap, PeakFinder, SignalStats, SpectrumAnalyzer, WaterfallGenerator, WindowFunction,
+    };
     use r4w_core::fft_utils::FftProcessor;
 
-    let samples = read_samples_f32(&input)?;
-    let analyze_count = if max_samples == 0 {
-        samples.len()
+    // Determine data file path (handle SigMF format)
+    let input_ext = args.input.extension().and_then(|e| e.to_str()).unwrap_or("");
+    let data_path = if input_ext == "sigmf-meta" {
+        args.input.with_extension("sigmf-data")
+    } else if input_ext == "sigmf-data" {
+        args.input.clone()
     } else {
-        max_samples.min(samples.len())
+        args.input.clone()
     };
 
+    // Read samples
+    let samples = read_samples_f32(&data_path)?;
+    let analyze_count = if args.samples == 0 {
+        samples.len()
+    } else {
+        args.samples.min(samples.len())
+    };
     let analyze_samples = &samples[..analyze_count];
 
-    println!("=== I/Q Sample Analysis ===");
-    println!("File: {:?}", input);
-    println!("Total samples: {}", samples.len());
-    println!("Analyzing: {}", analyze_count);
-    println!();
+    match args.mode.as_str() {
+        "basic" => {
+            // Original basic analysis
+            println!("=== I/Q Sample Analysis ===");
+            println!("File: {:?}", args.input);
+            println!("Total samples: {}", samples.len());
+            println!("Analyzing: {}", analyze_count);
+            println!();
 
-    // Basic statistics
-    let mean_i: f64 = analyze_samples.iter().map(|s| s.re).sum::<f64>() / analyze_count as f64;
-    let mean_q: f64 = analyze_samples.iter().map(|s| s.im).sum::<f64>() / analyze_count as f64;
+            let mean_i: f64 = analyze_samples.iter().map(|s| s.re).sum::<f64>() / analyze_count as f64;
+            let mean_q: f64 = analyze_samples.iter().map(|s| s.im).sum::<f64>() / analyze_count as f64;
 
-    let var_i: f64 = analyze_samples
-        .iter()
-        .map(|s| (s.re - mean_i).powi(2))
-        .sum::<f64>()
-        / analyze_count as f64;
-    let var_q: f64 = analyze_samples
-        .iter()
-        .map(|s| (s.im - mean_q).powi(2))
-        .sum::<f64>()
-        / analyze_count as f64;
+            let var_i: f64 = analyze_samples
+                .iter()
+                .map(|s| (s.re - mean_i).powi(2))
+                .sum::<f64>()
+                / analyze_count as f64;
+            let var_q: f64 = analyze_samples
+                .iter()
+                .map(|s| (s.im - mean_q).powi(2))
+                .sum::<f64>()
+                / analyze_count as f64;
 
-    let magnitudes: Vec<f64> = analyze_samples.iter().map(|s| s.norm()).collect();
-    let mean_mag: f64 = magnitudes.iter().sum::<f64>() / analyze_count as f64;
-    let max_mag = magnitudes.iter().fold(0.0_f64, |a, &b| a.max(b));
-    let min_mag = magnitudes.iter().fold(f64::MAX, |a, &b| a.min(b));
+            let magnitudes: Vec<f64> = analyze_samples.iter().map(|s| s.norm()).collect();
+            let mean_mag: f64 = magnitudes.iter().sum::<f64>() / analyze_count as f64;
+            let max_mag = magnitudes.iter().fold(0.0_f64, |a, &b| a.max(b));
+            let min_mag = magnitudes.iter().fold(f64::MAX, |a, &b| a.min(b));
 
-    println!("Time Domain Statistics:");
-    println!("  DC offset (I):     {:.6}", mean_i);
-    println!("  DC offset (Q):     {:.6}", mean_q);
-    println!("  Variance (I):      {:.6}", var_i);
-    println!("  Variance (Q):      {:.6}", var_q);
-    println!("  Std dev (I):       {:.6}", var_i.sqrt());
-    println!("  Std dev (Q):       {:.6}", var_q.sqrt());
-    println!();
-    println!("Magnitude Statistics:");
-    println!("  Mean:              {:.6}", mean_mag);
-    println!("  Min:               {:.6}", min_mag);
-    println!("  Max:               {:.6}", max_mag);
-    println!("  Peak-to-Average:   {:.2} dB", 20.0 * (max_mag / mean_mag).log10());
-    println!();
+            println!("Time Domain Statistics:");
+            println!("  DC offset (I):     {:.6}", mean_i);
+            println!("  DC offset (Q):     {:.6}", mean_q);
+            println!("  Variance (I):      {:.6}", var_i);
+            println!("  Variance (Q):      {:.6}", var_q);
+            println!("  Std dev (I):       {:.6}", var_i.sqrt());
+            println!("  Std dev (Q):       {:.6}", var_q.sqrt());
+            println!();
+            println!("Magnitude Statistics:");
+            println!("  Mean:              {:.6}", mean_mag);
+            println!("  Min:               {:.6}", min_mag);
+            println!("  Max:               {:.6}", max_mag);
+            println!("  Peak-to-Average:   {:.2} dB", 20.0 * (max_mag / mean_mag).log10());
+            println!();
 
-    // FFT analysis
-    let fft_size = 1024.min(analyze_count);
-    if analyze_count >= fft_size {
-        let mut fft = FftProcessor::new(fft_size);
-        let spectrum = fft.fft(&analyze_samples[..fft_size]);
-        let power_db = FftProcessor::power_spectrum_db(&spectrum);
+            let fft_size = 1024.min(analyze_count);
+            if analyze_count >= fft_size {
+                let mut fft = FftProcessor::new(fft_size);
+                let spectrum = fft.fft(&analyze_samples[..fft_size]);
+                let power_db = FftProcessor::power_spectrum_db(&spectrum);
 
-        let max_bin = power_db
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-            .map(|(i, _)| i)
-            .unwrap_or(0);
+                let max_bin = power_db
+                    .iter()
+                    .enumerate()
+                    .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+                    .map(|(i, _)| i)
+                    .unwrap_or(0);
 
-        let max_power = power_db[max_bin];
-        let noise_floor: f64 = power_db.iter().sum::<f64>() / power_db.len() as f64;
+                let max_power = power_db[max_bin];
+                let noise_floor: f64 = power_db.iter().sum::<f64>() / power_db.len() as f64;
 
-        println!("Frequency Domain (FFT size: {}):", fft_size);
-        println!("  Peak bin:          {}", max_bin);
-        println!("  Peak power:        {:.1} dB", max_power);
-        println!("  Noise floor:       {:.1} dB", noise_floor);
-        println!("  SNR estimate:      {:.1} dB", max_power - noise_floor);
+                println!("Frequency Domain (FFT size: {}):", fft_size);
+                println!("  Peak bin:          {}", max_bin);
+                println!("  Peak power:        {:.1} dB", max_power);
+                println!("  Noise floor:       {:.1} dB", noise_floor);
+                println!("  SNR estimate:      {:.1} dB", max_power - noise_floor);
+            }
+        }
+
+        "spectrum" => {
+            let window = WindowFunction::from_str(&args.window)
+                .unwrap_or(WindowFunction::Hann);
+            let mut analyzer = SpectrumAnalyzer::with_window(args.fft_size, window);
+            let result = analyzer.compute_averaged(analyze_samples, args.sample_rate, args.average);
+
+            let output_text = match args.output_format.as_str() {
+                "json" => result.to_json(),
+                "csv" => result.to_csv(),
+                "ascii" => result.to_ascii(80, 20),
+                _ => result.to_text(),
+            };
+
+            if let Some(output_path) = args.output {
+                std::fs::write(&output_path, &output_text)?;
+                println!("Spectrum written to {:?}", output_path);
+            } else {
+                println!("{}", output_text);
+            }
+        }
+
+        "waterfall" => {
+            let mut generator = WaterfallGenerator::with_hop(args.fft_size, args.fft_size / 2);
+            let result = generator.compute_with_limit(analyze_samples, args.sample_rate, Some(args.height));
+
+            #[allow(unused_variables)]
+            let colormap = Colormap::from_str(&args.colormap)
+                .unwrap_or(Colormap::Viridis);
+
+            match args.output_format.as_str() {
+                "ascii" => {
+                    let ascii = result.to_ascii_with_range(80, 40, args.min_db, args.max_db);
+                    if let Some(output_path) = args.output {
+                        std::fs::write(&output_path, &ascii)?;
+                        println!("Waterfall written to {:?}", output_path);
+                    } else {
+                        println!("{}", ascii);
+                    }
+                }
+                "png" => {
+                    #[cfg(feature = "image")]
+                    {
+                        let png_data = result.to_png(colormap, args.min_db, args.max_db);
+                        let output_path = args.output.unwrap_or_else(|| PathBuf::from("waterfall.png"));
+                        std::fs::write(&output_path, &png_data)?;
+                        println!("Waterfall PNG written to {:?}", output_path);
+                        println!("Dimensions: {}x{}", result.fft_size, result.power_db.len());
+                    }
+                    #[cfg(not(feature = "image"))]
+                    {
+                        anyhow::bail!("PNG output requires the 'image' feature. Use --output-format ascii instead.");
+                    }
+                }
+                _ => {
+                    // Default to ASCII for text output
+                    let ascii = result.to_ascii_with_range(80, 40, args.min_db, args.max_db);
+                    println!("{}", ascii);
+                }
+            }
+        }
+
+        "stats" => {
+            let stats = SignalStats::compute(analyze_samples, Some(args.sample_rate));
+
+            let output_text = match args.output_format.as_str() {
+                "json" => stats.to_json(),
+                _ => stats.to_text(),
+            };
+
+            if let Some(output_path) = args.output {
+                std::fs::write(&output_path, &output_text)?;
+                println!("Statistics written to {:?}", output_path);
+            } else {
+                println!("{}", output_text);
+            }
+        }
+
+        "peaks" => {
+            let window = WindowFunction::from_str(&args.window)
+                .unwrap_or(WindowFunction::Hann);
+            let mut analyzer = SpectrumAnalyzer::with_window(args.fft_size, window);
+            let spectrum = analyzer.compute_averaged(analyze_samples, args.sample_rate, args.average);
+
+            let finder = PeakFinder::new()
+                .with_threshold(args.threshold)
+                .with_max_peaks(args.max_peaks);
+            let peaks = finder.find_peaks(&spectrum);
+
+            let output_text = match args.output_format.as_str() {
+                "json" => PeakFinder::format_json(&peaks),
+                "csv" => PeakFinder::format_csv(&peaks),
+                _ => PeakFinder::format_text(&peaks),
+            };
+
+            if let Some(output_path) = args.output {
+                std::fs::write(&output_path, &output_text)?;
+                println!("Peaks written to {:?}", output_path);
+            } else {
+                println!("{}", output_text);
+            }
+        }
+
+        _ => {
+            anyhow::bail!(
+                "Unknown analysis mode: '{}'. Use: basic, spectrum, waterfall, stats, peaks",
+                args.mode
+            );
+        }
     }
 
     Ok(())
@@ -3667,8 +3865,38 @@ fn main() -> Result<()> {
         Commands::Analyze {
             input,
             format,
+            sample_rate,
             samples,
-        } => cmd_analyze(input, format, samples),
+            mode,
+            fft_size,
+            average,
+            output_format,
+            output,
+            window,
+            min_db,
+            max_db,
+            colormap,
+            threshold,
+            max_peaks,
+            height,
+        } => cmd_analyze(AnalyzeArgs {
+            input,
+            format,
+            sample_rate,
+            samples,
+            mode,
+            fft_size,
+            average,
+            output_format,
+            output,
+            window,
+            min_db,
+            max_db,
+            colormap,
+            threshold,
+            max_peaks,
+            height,
+        }),
 
         Commands::Waveform {
             waveform,

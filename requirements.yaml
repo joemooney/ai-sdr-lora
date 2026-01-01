@@ -16,8 +16,8 @@ requirements:
   req_type: Epic
   tags:
   - mesh
-  - protocol
   - meshtastic
+  - protocol
   - lora
   history:
   - id: b87df4b0-b8f6-47cc-bf04-604b5362c7fc
@@ -40,9 +40,9 @@ requirements:
   modified_at: 2025-12-30T20:09:32.375521722Z
   req_type: Functional
   tags:
-  - lora
   - encoding
   - physical-layer
+  - lora
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -75,8 +75,8 @@ requirements:
   req_type: Functional
   tags:
   - csma
-  - cad
   - physical-layer
+  - cad
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -109,8 +109,8 @@ requirements:
   req_type: Functional
   tags:
   - regulatory
-  - frequency
   - physical-layer
+  - frequency
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -137,8 +137,8 @@ requirements:
   req_type: Functional
   tags:
   - collision-avoidance
-  - mac-layer
   - csma
+  - mac-layer
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -170,8 +170,8 @@ requirements:
   modified_at: 2025-12-30T18:54:51.015773789Z
   req_type: Functional
   tags:
-  - framing
   - mac-layer
+  - framing
   - packet
   relationships:
   - rel_type: Parent
@@ -233,8 +233,8 @@ requirements:
   req_type: Functional
   tags:
   - flood
-  - routing
   - broadcast
+  - routing
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -266,9 +266,9 @@ requirements:
   modified_at: 2025-12-30T18:54:51.024770069Z
   req_type: Functional
   tags:
+  - routing
   - unicast
   - next-hop
-  - routing
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -300,8 +300,8 @@ requirements:
   modified_at: 2025-12-30T18:54:27.765255591Z
   req_type: Functional
   tags:
-  - routing
   - cache
+  - routing
   - deduplication
   relationships:
   - rel_type: Parent
@@ -357,8 +357,8 @@ requirements:
   req_type: Functional
   tags:
   - interop
-  - messages
   - protobuf
+  - messages
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -376,8 +376,8 @@ requirements:
   modified_at: 2025-12-30T18:34:06.606337548Z
   req_type: Functional
   tags:
-  - aes
   - interop
+  - aes
   - encryption
   relationships:
   - rel_type: Parent
@@ -396,9 +396,9 @@ requirements:
   modified_at: 2025-12-30T18:34:16.397667432Z
   req_type: Functional
   tags:
-  - interop
-  - config
   - channel
+  - config
+  - interop
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -416,9 +416,9 @@ requirements:
   modified_at: 2025-12-30T18:34:30.970516731Z
   req_type: Functional
   tags:
-  - messaging
   - text
   - app
+  - messaging
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -436,9 +436,9 @@ requirements:
   modified_at: 2025-12-30T18:34:41.008292847Z
   req_type: Functional
   tags:
-  - position
   - gps
   - app
+  - position
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -456,8 +456,8 @@ requirements:
   modified_at: 2025-12-30T18:54:51.029265252Z
   req_type: Functional
   tags:
-  - integration
   - trait
+  - integration
   - architecture
   relationships:
   - rel_type: Parent
@@ -490,9 +490,9 @@ requirements:
   modified_at: 2025-12-30T18:35:04.632283047Z
   req_type: Functional
   tags:
-  - sx126x
-  - hardware
   - radio
+  - hardware
+  - sx126x
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -511,8 +511,8 @@ requirements:
   req_type: Functional
   tags:
   - testing
-  - simulation
   - multi-node
+  - simulation
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -531,8 +531,8 @@ requirements:
   req_type: NonFunctional
   tags:
   - power
-  - battery
   - nfr
+  - battery
   relationships:
   - rel_type: Parent
     target_id: 00a8d98b-da52-4c20-8d69-f1f90facbfc3
@@ -588,6 +588,126 @@ requirements:
     content: Workflows in .github/workflows/ci.yml and benchmarks.yml. Uses github-action-benchmark for performance tracking.
     created_at: 2025-12-31T04:00:36.033953536Z
     modified_at: 2025-12-31T04:00:36.033953536Z
+- id: ef27499e-0f43-4999-8dc3-57547fc79c97
+  spec_id: FR-024
+  title: Dynamic Doppler Channel Model
+  description: Implement time-varying Doppler fading channel models including Jakes/Clarkes sum-of-sinusoids model for realistic mobile channel simulation. Support configurable maximum Doppler frequency and velocity-based Doppler calculation.
+  status: Completed
+  priority: High
+  owner: joe
+  feature: 24-Channel Simulation
+  created_at: 2026-01-01T00:45:23.000655534Z
+  modified_at: 2026-01-01T00:45:23.000655534Z
+  req_type: Functional
+  tags:
+  - channel
+  - doppler
+  - fading
+- id: c83161da-58d1-47d8-b8bf-0af9b75f8607
+  spec_id: FR-025
+  title: Tapped Delay Line Multipath Channel
+  description: 'Implement tapped delay line (TDL) multipath channel model with support for 3GPP standard profiles: EPA (Extended Pedestrian A), EVA (Extended Vehicular A), and ETU (Extended Typical Urban).'
+  status: Completed
+  priority: High
+  owner: joe
+  feature: 25-Channel Simulation
+  created_at: 2026-01-01T00:45:26.089040868Z
+  modified_at: 2026-01-01T00:45:26.089040868Z
+  req_type: Functional
+  tags:
+  - channel
+  - multipath
+  - 3gpp
+- id: 3fa6715a-0464-4aed-bf9b-e50552ddf5d3
+  spec_id: FR-026
+  title: CLI Spectrum Analysis Command
+  description: Add CLI command r4w analyze spectrum to compute and display FFT-based spectrum analysis with configurable FFT size, window function, and output formats (ASCII, JSON, PNG).
+  status: Completed
+  priority: Medium
+  owner: joe
+  feature: 26-CLI Analysis Tools
+  created_at: 2026-01-01T00:45:29.202873633Z
+  modified_at: 2026-01-01T00:45:29.202873633Z
+  req_type: Functional
+  tags:
+  - spectrum
+  - cli
+  - fft
+- id: deb7cb95-87ae-49e7-9f8d-4ca65c2e8d61
+  spec_id: FR-027
+  title: CLI Waterfall PNG Generation
+  description: Add CLI command r4w analyze waterfall to generate spectrogram/waterfall PNG images from I/Q signal files with configurable colormaps, FFT size, hop size, and dynamic range.
+  status: Completed
+  priority: Medium
+  owner: joe
+  feature: 27-CLI Analysis Tools
+  created_at: 2026-01-01T00:45:32.061276826Z
+  modified_at: 2026-01-01T00:45:32.061276826Z
+  req_type: Functional
+  tags:
+  - waterfall
+  - cli
+  - spectrogram
+- id: d17f5ab3-f452-45e0-af66-7c8d481ab8fb
+  spec_id: FR-028
+  title: CLI Signal Statistics
+  description: Add CLI command r4w analyze stats to display signal statistics including mean power, peak power, PAPR, DC offset, and sample count from I/Q signal files.
+  status: Completed
+  priority: Medium
+  owner: joe
+  feature: 28-CLI Analysis Tools
+  created_at: 2026-01-01T00:45:47.480602821Z
+  modified_at: 2026-01-01T00:45:47.480602821Z
+  req_type: Functional
+  tags:
+  - cli
+  - statistics
+  - power
+- id: 1bb45e13-5952-4b5f-83de-a1046ec7d0f8
+  spec_id: FR-029
+  title: CLI Peak Detection
+  description: Add CLI command r4w analyze peaks to find spectral peaks above configurable threshold for signal detection and analysis.
+  status: Completed
+  priority: Medium
+  owner: joe
+  feature: 29-CLI Analysis Tools
+  created_at: 2026-01-01T00:45:50.819575716Z
+  modified_at: 2026-01-01T00:45:50.819575716Z
+  req_type: Functional
+  tags:
+  - peaks
+  - cli
+  - detection
+- id: c743ccdf-5f80-413b-96a3-dd09dc0e7233
+  spec_id: TASK-030
+  title: Signal Visualization Gallery
+  description: Create example gallery with constellation diagrams, spectrum plots, waterfall images, and channel effect visualizations for PSK/QAM waveforms and various channel conditions (AWGN, Rayleigh, Rician, TDL profiles, Doppler).
+  status: Completed
+  priority: Medium
+  owner: joe
+  feature: 30-Documentation
+  created_at: 2026-01-01T00:45:53.481069148Z
+  modified_at: 2026-01-01T00:45:53.481069148Z
+  req_type: Task
+  tags:
+  - examples
+  - gallery
+  - visualization
+- id: 96888938-b9e2-4088-9302-9c3381e7d0d7
+  spec_id: TASK-031
+  title: Jupyter Tutorial Notebooks
+  description: Create 8 interactive Jupyter notebooks covering I/Q basics, modulation, spectrum analysis, channel effects, LoRa deep dive, BER simulation, waveform comparison, and mesh networking with Python wrapper for R4W CLI.
+  status: Completed
+  priority: Medium
+  owner: joe
+  feature: Documentation
+  created_at: 2026-01-01T00:45:56.165629168Z
+  modified_at: 2026-01-01T00:45:56.165629168Z
+  req_type: Task
+  tags:
+  - education
+  - tutorials
+  - notebooks
 id_config:
   format: SingleLevel
   numbering: Global
@@ -633,8 +753,8 @@ id_config:
     prefix: META
     description: Database configuration and templates
 features: []
-next_feature_number: 24
-next_spec_number: 24
+next_feature_number: 31
+next_spec_number: 32
 prefix_counters: {}
 relationship_definitions:
 - name: parent

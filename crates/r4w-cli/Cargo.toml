@@ -52,6 +52,8 @@ ctrlc = "3.4"
 rand = "0.8"
 
 [features]
-default = []
+default = ["image"]
 # Enable when hardware SDR support is ready
 # hardware = ["sdr-sim/soapysdr"]
+# Enable PNG image generation for waterfall/spectrum
+image = ["r4w-core/image"]

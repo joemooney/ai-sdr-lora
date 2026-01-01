@@ -4043,6 +4043,7 @@ dependencies = [
  "directories",
  "hmac",
  "hostname",
+ "image",
  "libc",
  "libloading",
  "ndarray",
@@ -4155,6 +4156,7 @@ name = "r4w-sim"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "image",
  "libloading",
  "num-complex",
  "r4w-core",

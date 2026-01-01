@@ -49,12 +49,14 @@
 
 pub mod channel;
 pub mod device;
+pub mod doppler;
 pub mod hal;
 pub mod simulator;
 
 // Re-exports
-pub use channel::{Channel, ChannelConfig, ChannelModel};
+pub use channel::{Channel, ChannelConfig, ChannelModel, TappedDelayLine, TdlProfile, TdlTap, DopplerModelConfig};
 pub use device::{SdrConfig, SdrDevice, SdrError, SdrResult};
+pub use doppler::{DopplerGenerator, DopplerModel, JakesDoppler, velocity_to_doppler};
 pub use hal::{ClockControl, ClockSource, DriverRegistry, SampleFormat, SdrDeviceExt, StreamConfig, StreamDirection, StreamHandle, StreamStatus, TunerControl};
 pub use simulator::Simulator;
 

@@ -12,6 +12,8 @@ simulator = []
 rtlsdr = ["dep:libloading"]
 soapysdr = ["dep:libloading"]
 uhd = []  # UHD support (stub implementation until libuhd bindings added)
+# Image generation (for gallery)
+image = ["r4w-core/image", "dep:image"]
 
 [dependencies]
 r4w-core = { path = "../r4w-core" }
@@ -26,6 +28,9 @@ rand_distr = { workspace = true }
 
 # Hardware support (optional)
 libloading = { version = "0.8", optional = true }
+
+# Image generation (optional, for gallery example)
+image = { version = "0.25", optional = true, default-features = false, features = ["png"] }
 # soapysdr = { version = "0.4", optional = true }
 # uhd = { version = "0.2", optional = true }
 

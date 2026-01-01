@@ -1,0 +1,6 @@
+# R4W Tutorial Notebook Dependencies
+numpy>=1.20
+matplotlib>=3.5
+jupyterlab>=4.0
+scipy>=1.9
+pandas>=1.5

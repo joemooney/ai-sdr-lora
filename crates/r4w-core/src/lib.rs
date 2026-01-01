@@ -45,6 +45,7 @@
 //! ```
 
 pub mod agent;
+pub mod analysis;
 pub mod anti_jam;
 pub mod benchmark;
 pub mod chirp;
@@ -95,6 +96,12 @@ pub use sync::{PreambleDetector, Synchronizer};
 pub use types::{Complex, IQSample, Sample};
 pub use waveform::{CommonParams, DemodResult, Waveform, WaveformFactory, WaveformInfo, VisualizationData};
 pub use whitening::Whitening;
+
+// Analysis tools re-exports
+pub use analysis::{
+    Colormap, IQImbalance, PeakFinder, SignalStats, SpectralPeak,
+    SpectrumAnalyzer, SpectrumResult, WaterfallGenerator, WaterfallResult, WindowFunction,
+};
 
 // Mesh networking re-exports
 pub use mesh::{
